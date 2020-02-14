@@ -8,19 +8,28 @@ export default class Chart {
           (canvas instanceof Element || canvas instanceof HTMLDocument) &&
           canvas.tagName.toLowerCase() === 'canvas'
       },
+      indicator: {
+        styles: {
+          color: '#27ca5d',
+          width: 2
+        },
+        animation: {
+          time: 1000,
+          scaleTo: 5
+        }
+      },
       styles: {
         background: '#000000',
         lineColor: '#ffffff',
-        lineWidth: 3,
-        circle: {
-          color: '#27ca5d',
-          width: 2
-        }
+        lineWidth: 2
+      },
+      offset: {
+        right: 20
       },
       tick: 1000,
-      dots: []
+      dots: [
+      ]
     };
-    this.intervals = {};
     this.checkErrors();
     this.init();
   }
@@ -61,10 +70,8 @@ export default class Chart {
     canvas.element.width = 1;
     canvas.element.width = width;
   }
-  resize() {
-  }
+  resize() {}
   init() {
-    let { canvas } = this.state;
     window.addEventListener('resize', this.resize.bind(this));
     this.render();
     this.runDotsReceive();
@@ -73,42 +80,48 @@ export default class Chart {
     this.clearCanvas();
     this.drawBackground();
     this.drawLine();
-    this.drawDot();
+    this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
-  getDotCords() {
-    let { canvas, styles } = this.state,
+  getIndicatorCords() {
+    let { canvas, indicator, offset } = this.state,
       { element } = canvas,
-      { circle } = styles;
+      { styles } = indicator;
     return {
-      x: element.clientWidth - 20 - circle.width / 2,
+      x: element.clientWidth - offset.right - styles.width / 2,
       y: element.clientHeight / 2
     };
   }
-  drawDot() {
-    let { x, y } = this.getDotCords(),
-      { canvas, styles } = this.state,
-      { circle } = styles,
+  drawIndicator() {
+    let { x, y } = this.getIndicatorCords(),
+      { indicator, canvas } = this.state,
+      { styles, animation } = indicator,
       { context } = canvas;
     context.strokeStyle = 'transparent';
 
     context.save();
-    if(!this.dotAnimatedState || this.dotAnimatedState >= 1) this.dotAnimatedState = 0;
-    context.globalAlpha = 1 - this.dotAnimatedState;
+    if (!this.indicatorAnimatedState || this.indicatorAnimatedState >= 1)
+      this.indicatorAnimatedState = 0;
+    context.globalAlpha = 1 - this.indicatorAnimatedState;
     context.beginPath();
-    context.arc(x, y, circle.width * this.dotAnimatedState * 4, 0, 2 * Math.PI);
-    context.fillStyle = circle.color;
+    context.arc(
+      x,
+      y,
+      styles.width * this.indicatorAnimatedState * animation.scaleTo,
+      0,
+      2 * Math.PI
+    );
+    context.fillStyle = styles.color;
     context.fill();
     context.stroke();
-    this.dotAnimatedState += 0.015;
+    this.indicatorAnimatedState += 1 / 60 / (animation.time / 1000);
     context.restore();
 
     context.beginPath();
-    context.arc(x, y, circle.width, 0, 2 * Math.PI);
-    context.fillStyle = circle.color;
+    context.arc(x, y, styles.width, 0, 2 * Math.PI);
+    context.fillStyle = styles.color;
     context.fill();
     context.stroke();
-
   }
   drawBackground() {
     let { canvas, styles } = this.state,
@@ -120,26 +133,48 @@ export default class Chart {
     context.fillRect(0, 0, element.width, element.height);
   }
   drawLine() {
-    let { canvas, dots, styles } = this.state,
+    let { canvas, dots, styles, offset } = this.state,
       { background, lineColor, lineWidth } = styles,
       { context, element } = canvas;
     if (!dots.length) return;
-    let gradient = context.createLinearGradient(0, 0, 0, element.height);
-    gradient.addColorStop(0, lineColor);
-    gradient.addColorStop(1, background);
+    let max = (min = dots[dots.length - 1].value),
+      min = dots[dots.length - 1].value,
+      maxHeight = 0,
+      minHeight = 0;
+    for (let i = dots.length - 1; i >= 0; i--) {
+      if (dots[i].value > max) max = dots[i].value;
+      if (dots[i].value < min) min = dots[i].value;
+    }
+    for (let i = dots.length - 1; i >= 0; i--) {
+      dots[i].x =
+        element.clientWidth -
+        (element.clientWidth / (dots.length - 1)) * (dots.length - i - 1) -
+        offset.right;
+      dots[i].y =
+        element.clientHeight / 2 -
+        (i === dots.length - 1 ? 0 : Math.random() * 100);
+      if (i === dots.length - 1) {
+        minHeight = dots[i].y;
+        maxHeight = dots[i].y;
+      } else {
+        if (dots[i].y > maxHeight) maxHeight = dots[i].y;
+        if (dots[i].y < minHeight) minHeight = dots[i].y;
+      }
+    }
+    // console.log(minHeight, maxHeight);
+    // let gradient = context.createLinearGradient(0, minHeight, 0, maxHeight);
+    // gradient.addColorStop(0, lineColor);
+    // gradient.addColorStop(1, background);
 
-    context.moveTo(Math.random(), Math.random());
     context.beginPath();
-    context.fillStyle = gradient;
+    // context.fillStyle = gradient;
     context.strokeStyle = lineColor;
     context.lineWidth = lineWidth;
-    for (let i = 0; i < dots.length; i++) {
-      let dot = dots[i],
-        prevDot = dots[i - 1];
-      // context.lineTo(
-      //   Math.random() * dots.length * 100,
-      //   Math.random() * dots.length * 100
-      // );
+    // context.moveTo(dots[dots.length - 1].x, dots[dots.length - 1].y);
+    console.log(dots);
+    for (let i = dots.length - 1; i >= 0; i--) {
+      let dot = dots[i];
+      context.lineTo(dot.x, dot.y);
       // context.bezierCurveTo(
       // );
     }
