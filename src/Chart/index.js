@@ -21,14 +21,16 @@ export default class Chart {
       styles: {
         background: '#000000',
         lineColor: '#ffffff',
-        lineWidth: 2
+        lineWidth: 1
       },
       offset: {
-        right: 20
+        right: 20,
+        left: 100,
+        top: 20,
+        bottom: 20
       },
       tick: 1000,
-      dots: [
-      ]
+      dots: []
     };
     this.checkErrors();
     this.init();
@@ -138,6 +140,7 @@ export default class Chart {
       { context, element } = canvas;
     if (!dots.length) return;
     let max = (min = dots[dots.length - 1].value),
+      mid = dots[dots.length - 1].value,
       min = dots[dots.length - 1].value,
       maxHeight = 0,
       minHeight = 0;
@@ -145,23 +148,23 @@ export default class Chart {
       if (dots[i].value > max) max = dots[i].value;
       if (dots[i].value < min) min = dots[i].value;
     }
+    let boxWidth = (offset.left || 0) / dots.length - 1;
     for (let i = dots.length - 1; i >= 0; i--) {
       dots[i].x =
         element.clientWidth -
-        (element.clientWidth / (dots.length - 1)) * (dots.length - i - 1) -
+        (element.clientWidth / (dots.length - 1) - boxWidth) * (dots.length - i - 1) -
         offset.right;
       dots[i].y =
-        element.clientHeight / 2 -
-        (i === dots.length - 1 ? 0 : Math.random() * 100);
-      if (i === dots.length - 1) {
-        minHeight = dots[i].y;
-        maxHeight = dots[i].y;
+        element.clientHeight -
+        element.clientHeight *
+          (((dots[i].value - min) * 100) / (max - min) / 100);
+      if (dots[i].y < element.clientHeight / 2) {
+        dots[i].y += offset.top || 0;
       } else {
-        if (dots[i].y > maxHeight) maxHeight = dots[i].y;
-        if (dots[i].y < minHeight) minHeight = dots[i].y;
+        dots[i].y -= offset.bottom || 0;
       }
     }
-    // console.log(minHeight, maxHeight);
+
     // let gradient = context.createLinearGradient(0, minHeight, 0, maxHeight);
     // gradient.addColorStop(0, lineColor);
     // gradient.addColorStop(1, background);
@@ -171,7 +174,6 @@ export default class Chart {
     context.strokeStyle = lineColor;
     context.lineWidth = lineWidth;
     // context.moveTo(dots[dots.length - 1].x, dots[dots.length - 1].y);
-    console.log(dots);
     for (let i = dots.length - 1; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
