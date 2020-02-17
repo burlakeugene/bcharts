@@ -30,7 +30,7 @@ export default class Chart {
         top: 20,
         bottom: 20
       },
-      tick: 500,
+      tick: 1000,
       dotsLimit: 30,
       dotsOffset: 0,
       dots: []
@@ -43,16 +43,23 @@ export default class Chart {
     if (!canvas.isCanvas)
       throw new Error(canvas.element + ' is not a canvas element');
   }
-  newDot() {
+  newDot(value) {
     let { dots } = this.getDots('all'),
+      { dotsOffset, tick } = this.state,
       lastDot = dots[dots.length - 1],
-      dot = Math.random() * (Math.random() > 0.5 ? -1 : 1),
-      newDot = (lastDot ? lastDot.value : 0) + dot;
+      prevValue = lastDot ? lastDot.value : 0,
+      randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
+      time = +new Date();
+    value = value || prevValue + randomValue;
+    if (dotsOffset) dotsOffset++;
     dots.push({
-      value: newDot,
-      time: +new Date()
+      value,
+      animatedValue: prevValue,
+      step: ((value - prevValue) / 60) * (tick / 1000),
+      time
     });
     this.setState({
+      dotsOffset,
       dots
     });
   }
@@ -78,8 +85,33 @@ export default class Chart {
   resize() {}
   init() {
     window.addEventListener('resize', this.resize.bind(this));
+    this.listeners();
     this.render();
     this.runDotsReceive();
+  }
+  listeners() {
+    let { canvas } = this.state,
+      { element } = canvas,
+      pushed = false,
+      x = 0;
+    element.addEventListener('mousedown', e => {
+      pushed = true;
+      x = e.clientX;
+    });
+    element.addEventListener('mouseup', e => {
+      pushed = false;
+      x = 0;
+    });
+    element.addEventListener('mousemove', e => {
+      let {dotsOffset} = this.state;
+      if(pushed){
+        dotsOffset += e.clientX - x;
+        x = e.clientX;
+        this.setState({
+          dotsOffset: dotsOffset >= 0 ? dotsOffset : 0
+        })
+      }
+    });
   }
   render() {
     this.clearCanvas();
@@ -91,8 +123,16 @@ export default class Chart {
   getDots(type) {
     let { dots, dotsOffset, dotsLimit } = this.state,
       draw = [...dots];
-    if (dotsOffset && draw.length - dotsOffset > 0) {
-      draw = draw.slice(0, draw.length - dotsOffset);
+    if (dotsOffset) {
+      let rest = draw.length - dotsOffset,
+        moreThenLimit = rest > dotsLimit;
+      if(!moreThenLimit){
+        dotsOffset = draw.length - dotsLimit;
+        this.setState({
+          dotsOffset
+        })
+      }
+      draw = draw.slice(0, moreThenLimit ? rest : dotsLimit);
     }
     if (draw.length > dotsLimit) {
       draw = draw.slice(draw.length - dotsLimit, draw.length);
@@ -102,12 +142,14 @@ export default class Chart {
       max = dots.length ? dots[0].value : 0,
       min = dots.length ? dots[0].value : 0;
     for (let i = 0; i <= dots.length - 1; i++) {
-      if (dots[i].value > max) max = dots[i].value;
-      if (dots[i].value < min) min = dots[i].value;
+      let { value } = dots[i];
+      if (value > max) max = value;
+      if (value < min) min = value;
     }
     for (let i = 0; i <= draw.length - 1; i++) {
-      if (draw[i].value > drawMax) drawMax = draw[i].value;
-      if (draw[i].value < drawMin) drawMin = draw[i].value;
+      let { value } = draw[i];
+      if (value > drawMax) drawMax = value;
+      if (value < drawMin) drawMin = value;
     }
     let result = {
       all: {
@@ -125,7 +167,7 @@ export default class Chart {
     };
     return type && result[type] ? result[type] : result;
   }
-  getIndicatorCords() {
+  getIndicatorCoords() {
     let { canvas, indicator, offset } = this.state,
       { element } = canvas,
       { styles, animation } = indicator,
@@ -145,6 +187,7 @@ export default class Chart {
         lineHeight -
         lineHeight *
           (((last.value - draw.min) * 100) / (draw.max - draw.min) / 100);
+      if (!y) y = lineHeight / 2 + lineTop;
       if (y > lineBottom) y = lineBottom;
       if (y < lineTop) y = lineTop;
     }
@@ -154,7 +197,7 @@ export default class Chart {
     };
   }
   drawIndicator() {
-    let { x, y } = this.getIndicatorCords(),
+    let { x, y } = this.getIndicatorCoords(),
       { indicator, canvas } = this.state,
       { styles, animation } = indicator,
       { context } = canvas;
@@ -228,11 +271,13 @@ export default class Chart {
     if (!dots.length) return;
     let linePartWidth = lineView / (dots.length - 1);
     for (let i = dots.length - 1; i >= 0; i--) {
+      let { value } = dots[i];
       dots[i].x = lineEnd + linePartWidth * i;
       dots[i].y =
         lineTop +
         lineHeight -
-        lineHeight * (((dots[i].value - min) * 100) / (max - min) / 100);
+        lineHeight * (((value - min) * 100) / (max - min) / 100);
+      if (!dots[i].y) dots[i].y = lineHeight / 2 + lineTop;
     }
 
     context.beginPath();
@@ -265,24 +310,5 @@ export default class Chart {
       context.lineTo(lineStart, 0);
       context.stroke();
     }
-  }
-
-  smoothPoints(dots, smooth) {
-    for (let k = 0; k <= smooth; k++) {
-      for (let j = 0; j < dots.length; j++) {
-        let current = dots[j],
-          prev = dots[j - 1],
-          next = dots[j + 1];
-        dots[j].y =
-          prev && next
-            ? this.smoothPoint(prev.y, current.y, next.y)
-            : dots[j].y;
-      }
-    }
-    return dots;
-  }
-
-  smoothPoint(prev, current, next) {
-    return (prev + current + next) / 3;
   }
 }
