@@ -21,15 +21,18 @@ export default class Chart {
       styles: {
         background: '#000000',
         lineColor: '#ffffff',
-        lineWidth: 1
+        lineWidth: 1,
+        gradient: false
       },
       offset: {
+        left: 20,
         right: 20,
-        left: 100,
         top: 20,
         bottom: 20
       },
-      tick: 1000,
+      tick: 500,
+      dotsLimit: 30,
+      dotsOffset: 0,
       dots: []
     };
     this.checkErrors();
@@ -41,10 +44,10 @@ export default class Chart {
       throw new Error(canvas.element + ' is not a canvas element');
   }
   newDot() {
-    let { dots } = this.state,
+    let { dots } = this.getDots('all'),
       lastDot = dots[dots.length - 1],
       dot = Math.random() * (Math.random() > 0.5 ? -1 : 1),
-      newDot = Math.abs((lastDot ? lastDot.value : 0) + dot);
+      newDot = (lastDot ? lastDot.value : 0) + dot;
     dots.push({
       value: newDot,
       time: +new Date()
@@ -85,13 +88,69 @@ export default class Chart {
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
+  getDots(type) {
+    let { dots, dotsOffset, dotsLimit } = this.state,
+      draw = [...dots];
+    if (dotsOffset && draw.length - dotsOffset > 0) {
+      draw = draw.slice(0, draw.length - dotsOffset);
+    }
+    if (draw.length > dotsLimit) {
+      draw = draw.slice(draw.length - dotsLimit, draw.length);
+    }
+    let drawMax = draw.length ? draw[0].value : 0,
+      drawMin = draw.length ? draw[0].value : 0,
+      max = dots.length ? dots[0].value : 0,
+      min = dots.length ? dots[0].value : 0;
+    for (let i = 0; i <= dots.length - 1; i++) {
+      if (dots[i].value > max) max = dots[i].value;
+      if (dots[i].value < min) min = dots[i].value;
+    }
+    for (let i = 0; i <= draw.length - 1; i++) {
+      if (draw[i].value > drawMax) drawMax = draw[i].value;
+      if (draw[i].value < drawMin) drawMin = draw[i].value;
+    }
+    let result = {
+      all: {
+        dots,
+        max,
+        min
+      },
+      draw: {
+        dots: draw,
+        max: drawMax,
+        min: drawMin
+      },
+      last: dots[dots.length - 1],
+      first: dots[0]
+    };
+    return type && result[type] ? result[type] : result;
+  }
   getIndicatorCords() {
     let { canvas, indicator, offset } = this.state,
       { element } = canvas,
-      { styles } = indicator;
+      { styles, animation } = indicator,
+      { draw, last } = this.getDots(),
+      {
+        lineStart,
+        lineEnd,
+        lineView,
+        lineTop,
+        lineBottom,
+        lineHeight
+      } = this.getLineDrawCoords();
+    let y = styles.width * animation.scaleTo * -1;
+    if (last) {
+      y =
+        lineTop +
+        lineHeight -
+        lineHeight *
+          (((last.value - draw.min) * 100) / (draw.max - draw.min) / 100);
+      if (y > lineBottom) y = lineBottom;
+      if (y < lineTop) y = lineTop;
+    }
     return {
-      x: element.clientWidth - offset.right - styles.width / 2,
-      y: element.clientHeight / 2
+      x: element.clientWidth - (offset.right || 0) - styles.width / 2,
+      y
     };
   }
   drawIndicator() {
@@ -134,53 +193,96 @@ export default class Chart {
     context.fillStyle = background;
     context.fillRect(0, 0, element.width, element.height);
   }
+  getLineDrawCoords() {
+    let { canvas, offset } = this.state,
+      { element } = canvas,
+      lineStart = element.clientWidth - offset.right,
+      lineEnd = offset.left,
+      lineView = lineStart - lineEnd,
+      lineTop = offset.top,
+      lineBottom = element.clientHeight - offset.bottom,
+      lineHeight = lineBottom - lineTop;
+    return {
+      lineStart,
+      lineEnd,
+      lineView,
+      lineTop,
+      lineBottom,
+      lineHeight
+    };
+  }
   drawLine() {
-    let { canvas, dots, styles, offset } = this.state,
+    let { canvas, styles, offset, dotsLimit, dotsOffset } = this.state,
       { background, lineColor, lineWidth } = styles,
-      { context, element } = canvas;
+      { context, element } = canvas,
+      { draw } = this.getDots(),
+      { dots, min, max } = draw,
+      {
+        lineStart,
+        lineEnd,
+        lineView,
+        lineTop,
+        lineBottom,
+        lineHeight
+      } = this.getLineDrawCoords();
     if (!dots.length) return;
-    let max = (min = dots[dots.length - 1].value),
-      mid = dots[dots.length - 1].value,
-      min = dots[dots.length - 1].value,
-      maxHeight = 0,
-      minHeight = 0;
+    let linePartWidth = lineView / (dots.length - 1);
     for (let i = dots.length - 1; i >= 0; i--) {
-      if (dots[i].value > max) max = dots[i].value;
-      if (dots[i].value < min) min = dots[i].value;
-    }
-    let boxWidth = (offset.left || 0) / dots.length - 1;
-    for (let i = dots.length - 1; i >= 0; i--) {
-      dots[i].x =
-        element.clientWidth -
-        (element.clientWidth / (dots.length - 1) - boxWidth) * (dots.length - i - 1) -
-        offset.right;
+      dots[i].x = lineEnd + linePartWidth * i;
       dots[i].y =
-        element.clientHeight -
-        element.clientHeight *
-          (((dots[i].value - min) * 100) / (max - min) / 100);
-      if (dots[i].y < element.clientHeight / 2) {
-        dots[i].y += offset.top || 0;
-      } else {
-        dots[i].y -= offset.bottom || 0;
-      }
+        lineTop +
+        lineHeight -
+        lineHeight * (((dots[i].value - min) * 100) / (max - min) / 100);
     }
-
-    // let gradient = context.createLinearGradient(0, minHeight, 0, maxHeight);
-    // gradient.addColorStop(0, lineColor);
-    // gradient.addColorStop(1, background);
 
     context.beginPath();
-    // context.fillStyle = gradient;
-    context.strokeStyle = lineColor;
     context.lineWidth = lineWidth;
-    // context.moveTo(dots[dots.length - 1].x, dots[dots.length - 1].y);
+    context.strokeStyle = lineColor;
+    context.lineJoin = 'round';
+    if (styles.gradient) {
+      let gradient = context.createLinearGradient(0, lineTop, 0, lineHeight);
+      gradient.addColorStop(0, lineColor);
+      gradient.addColorStop(1, background);
+      context.fillStyle = gradient;
+      context.lineTo(lineStart, lineHeight);
+    }
+    // dots = this.smoothPoints(dots, 6);
+
     for (let i = dots.length - 1; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
-      // context.bezierCurveTo(
-      // );
     }
+    if (styles.gradient) context.lineTo(lineEnd, lineBottom);
     context.fill();
     context.stroke();
+    if (styles.gradient) {
+      context.beginPath();
+      context.lineWidth = lineWidth + 1;
+      context.strokeStyle = background;
+      context.lineTo(lineEnd, 0);
+      context.lineTo(lineEnd, element.clientHeight);
+      context.lineTo(lineStart, element.clientHeight);
+      context.lineTo(lineStart, 0);
+      context.stroke();
+    }
+  }
+
+  smoothPoints(dots, smooth) {
+    for (let k = 0; k <= smooth; k++) {
+      for (let j = 0; j < dots.length; j++) {
+        let current = dots[j],
+          prev = dots[j - 1],
+          next = dots[j + 1];
+        dots[j].y =
+          prev && next
+            ? this.smoothPoint(prev.y, current.y, next.y)
+            : dots[j].y;
+      }
+    }
+    return dots;
+  }
+
+  smoothPoint(prev, current, next) {
+    return (prev + current + next) / 3;
   }
 }
