@@ -18,11 +18,20 @@ export default class Chart {
           scaleTo: 5
         }
       },
-      styles: {
-        background: '#000000',
-        lineColor: '#ffffff',
-        lineWidth: 1,
-        gradient: false
+      line: {
+        styles: {
+          color: '#ffffff',
+          width: 1,
+          gradient: {
+            from: '#fff',
+            to: '#000'
+          }
+        }
+      },
+      view: {
+        styles: {
+          background: '#000000'
+        }
       },
       offset: {
         left: 20,
@@ -30,8 +39,8 @@ export default class Chart {
         top: 20,
         bottom: 20
       },
-      tick: 1000,
-      dotsLimit: 30,
+      tick: 500,
+      dotsLimit: 20,
       dotsOffset: 0,
       dots: []
     };
@@ -54,8 +63,32 @@ export default class Chart {
     if (dotsOffset) dotsOffset++;
     dots.push({
       value,
-      animatedValue: prevValue,
-      step: ((value - prevValue) / 60) * (tick / 1000),
+      time
+    });
+    this.setState({
+      dotsOffset,
+      dots
+    });
+  }
+  newDotAnimate(value) {
+    let { dots } = this.getDots('all'),
+      { dotsOffset, tick } = this.state,
+      lastDot = dots[dots.length - 1],
+      prevValue = lastDot ? lastDot.value : 0,
+      randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
+      time = +new Date();
+    value = value || prevValue + randomValue;
+    if (dotsOffset) dotsOffset++;
+    let animationTime = (60 * tick) / 1000,
+      step = (value - prevValue) / animationTime;
+    dots.push({
+      value: prevValue,
+      initialValue: prevValue,
+      nextValue: value,
+      animationTime,
+      animationTimeInitial: animationTime,
+      animationWidth: 0,
+      step,
       time
     });
     this.setState({
@@ -66,7 +99,8 @@ export default class Chart {
   runDotsReceive() {
     let { tick } = this.state;
     setInterval(() => {
-      this.newDot();
+      // this.newDot();
+      this.newDotAnimate();
     }, tick);
   }
   setState(options, callback) {
@@ -89,30 +123,6 @@ export default class Chart {
     this.render();
     this.runDotsReceive();
   }
-  listeners() {
-    let { canvas } = this.state,
-      { element } = canvas,
-      pushed = false,
-      x = 0;
-    element.addEventListener('mousedown', e => {
-      pushed = true;
-      x = e.clientX;
-    });
-    element.addEventListener('mouseup', e => {
-      pushed = false;
-      x = 0;
-    });
-    element.addEventListener('mousemove', e => {
-      let {dotsOffset} = this.state;
-      if(pushed){
-        dotsOffset += e.clientX - x;
-        x = e.clientX;
-        this.setState({
-          dotsOffset: dotsOffset >= 0 ? dotsOffset : 0
-        })
-      }
-    });
-  }
   render() {
     this.clearCanvas();
     this.drawBackground();
@@ -122,20 +132,23 @@ export default class Chart {
   }
   getDots(type) {
     let { dots, dotsOffset, dotsLimit } = this.state,
-      draw = [...dots];
+      draw = [...dots],
+      beforeFirst = false;
     if (dotsOffset) {
       let rest = draw.length - dotsOffset,
         moreThenLimit = rest > dotsLimit;
-      if(!moreThenLimit){
+      if (!moreThenLimit) {
         dotsOffset = draw.length - dotsLimit;
         this.setState({
           dotsOffset
-        })
+        });
       }
       draw = draw.slice(0, moreThenLimit ? rest : dotsLimit);
     }
     if (draw.length > dotsLimit) {
+      beforeFirst = draw[draw.length - dotsLimit - 1];
       draw = draw.slice(draw.length - dotsLimit, draw.length);
+      if (beforeFirst) draw = [beforeFirst, ...draw];
     }
     let drawMax = draw.length ? draw[0].value : 0,
       drawMin = draw.length ? draw[0].value : 0,
@@ -160,7 +173,8 @@ export default class Chart {
       draw: {
         dots: draw,
         max: drawMax,
-        min: drawMin
+        min: drawMin,
+        beforeFirst
       },
       last: dots[dots.length - 1],
       first: dots[0]
@@ -175,7 +189,6 @@ export default class Chart {
       {
         lineStart,
         lineEnd,
-        lineView,
         lineTop,
         lineBottom,
         lineHeight
@@ -228,9 +241,9 @@ export default class Chart {
     context.stroke();
   }
   drawBackground() {
-    let { canvas, styles } = this.state,
+    let { canvas, view } = this.state,
       { context, element } = canvas,
-      { background } = styles;
+      { background } = view.styles;
     element.width = element.clientWidth;
     element.height = element.clientHeight;
     context.fillStyle = background;
@@ -255,11 +268,11 @@ export default class Chart {
     };
   }
   drawLine() {
-    let { canvas, styles, offset, dotsLimit, dotsOffset } = this.state,
-      { background, lineColor, lineWidth } = styles,
+    let { canvas, line, view, offset, dotsLimit, dotsOffset } = this.state,
+      { gradient, color, width } = line.styles,
+      { background } = view.styles,
       { context, element } = canvas,
-      { draw } = this.getDots(),
-      { dots, min, max } = draw,
+      all = this.getDots('all'),
       {
         lineStart,
         lineEnd,
@@ -268,41 +281,101 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords();
-    if (!dots.length) return;
-    let linePartWidth = lineView / (dots.length - 1);
+    if (!all.dots.length) return;
+
+    //animation dots
+    for (let i = all.dots.length - 1; i >= 0; i--) {
+      let dot = all.dots[i];
+      if (dot.hasOwnProperty('nextValue')) {
+        let isEnd = false;
+        dot.value += dot.step;
+        dot.animationTime--;
+        dot.animationWidth =
+          ((dot.animationTimeInitial - dot.animationTime) * 100) /
+          dot.animationTimeInitial /
+          100;
+        if (dot.nextValue - dot.initialValue >= 0 && dot.value > dot.nextValue)
+          isEnd = true;
+        else if (
+          dot.nextValue - dot.initialValue < 0 &&
+          dot.value < dot.nextValue
+        )
+          isEnd = true;
+        if (isEnd) {
+          dot.value = dot.nextValue;
+          delete dot.nextValue;
+          delete dot.step;
+          delete dot.initialValue;
+          delete dot.animationTime;
+          delete dot.animationTimeInitial;
+          delete dot.animationWidth;
+        }
+      }
+    }
+    let draw = this.getDots('draw'),
+      { dots, min, max, beforeFirst } = draw,
+      lineLastDot = lineStart,
+      restWidth = 0,
+      beforeFirstMixed = false;
+    if (
+      beforeFirst &&
+      dots.find(item => {
+        return item.animationWidth;
+      })
+    ) {
+      beforeFirstMixed = true;
+    }
     for (let i = dots.length - 1; i >= 0; i--) {
-      let { value } = dots[i];
-      dots[i].x = lineEnd + linePartWidth * i;
+      let dot = dots[i],
+        value = dot.value,
+        partOffset = 0,
+        partWidth = lineView / (dots.length - 1);
+      if (dot.animationWidth) {
+        partWidth *= dot.animationWidth;
+        restWidth += lineView / (dots.length - 1) - partWidth;
+      }
+      if (i === 0 && beforeFirstMixed) {
+        lineLastDot -= restWidth;
+      }
+      dots[i].x = lineLastDot;
       dots[i].y =
         lineTop +
         lineHeight -
         lineHeight * (((value - min) * 100) / (max - min) / 100);
+      if (i === 0 && beforeFirstMixed) {
+        let dif = 1 - (lineLastDot - restWidth) * 100 / lineLastDot / 100;
+        // dots[i].y += restWidth / lineLastDot / 10;
+      }
       if (!dots[i].y) dots[i].y = lineHeight / 2 + lineTop;
+      if (beforeFirstMixed) {
+        lineLastDot -= partWidth;
+      } else {
+        // TODO: Glitch on little count of dots
+        lineLastDot -= partWidth + restWidth / (dots.length - 1);
+      }
     }
 
     context.beginPath();
-    context.lineWidth = lineWidth;
-    context.strokeStyle = lineColor;
+    context.lineWidth = width;
+    context.strokeStyle = color;
     context.lineJoin = 'round';
-    if (styles.gradient) {
+    if (gradient.bool) {
       let gradient = context.createLinearGradient(0, lineTop, 0, lineHeight);
-      gradient.addColorStop(0, lineColor);
-      gradient.addColorStop(1, background);
+      gradient.addColorStop(0, gradient.from);
+      gradient.addColorStop(1, gradient.to);
       context.fillStyle = gradient;
       context.lineTo(lineStart, lineHeight);
     }
-    // dots = this.smoothPoints(dots, 6);
-
     for (let i = dots.length - 1; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
     }
-    if (styles.gradient) context.lineTo(lineEnd, lineBottom);
+    if (gradient.bool) context.lineTo(lineEnd, lineBottom);
     context.fill();
     context.stroke();
-    if (styles.gradient) {
+    if (gradient.bool) {
       context.beginPath();
-      context.lineWidth = lineWidth + 1;
+      context.lineWidth = width + 1;
       context.strokeStyle = background;
       context.lineTo(lineEnd, 0);
       context.lineTo(lineEnd, element.clientHeight);
@@ -310,5 +383,29 @@ export default class Chart {
       context.lineTo(lineStart, 0);
       context.stroke();
     }
+  }
+  listeners() {
+    let { canvas } = this.state,
+      { element } = canvas,
+      pushed = false,
+      x = 0;
+    element.addEventListener('mousedown', e => {
+      pushed = true;
+      x = e.clientX;
+    });
+    element.addEventListener('mouseup', e => {
+      pushed = false;
+      x = 0;
+    });
+    element.addEventListener('mousemove', e => {
+      let { dotsOffset } = this.state;
+      if (pushed) {
+        dotsOffset += e.clientX - x;
+        x = e.clientX;
+        this.setState({
+          dotsOffset: dotsOffset >= 0 ? dotsOffset : 0
+        });
+      }
+    });
   }
 }
