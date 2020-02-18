@@ -23,8 +23,9 @@ export default class Chart {
           color: '#ffffff',
           width: 1,
           gradient: {
-            from: '#fff',
-            to: '#000'
+            from: '#ffffff',
+            to: '#000000',
+            enable: false
           }
         }
       },
@@ -40,12 +41,21 @@ export default class Chart {
         bottom: 20
       },
       tick: 500,
-      dotsLimit: 20,
+      dotsLimit: 30,
       dotsOffset: 0,
       dots: []
     };
     this.checkErrors();
     this.init();
+  }
+  runDotsReceive() {
+    let { tick } = this.state;
+    setInterval(() => {
+      // this.newDot();
+      this.newDotAnimate();
+      // this.newDotAnimate();
+      // this.newDotAnimate();
+    }, tick);
   }
   checkErrors() {
     let { canvas } = this.state;
@@ -96,12 +106,8 @@ export default class Chart {
       dots
     });
   }
-  runDotsReceive() {
-    let { tick } = this.state;
-    setInterval(() => {
-      // this.newDot();
-      this.newDotAnimate();
-    }, tick);
+  newDotAnimateCheck(){
+
   }
   setState(options, callback) {
     for (let option in options) {
@@ -148,7 +154,7 @@ export default class Chart {
     if (draw.length > dotsLimit) {
       beforeFirst = draw[draw.length - dotsLimit - 1];
       draw = draw.slice(draw.length - dotsLimit, draw.length);
-      if (beforeFirst) draw = [beforeFirst, ...draw];
+      if (beforeFirst && !dotsOffset) draw = [beforeFirst, ...draw];
     }
     let drawMax = draw.length ? draw[0].value : 0,
       drawMin = draw.length ? draw[0].value : 0,
@@ -284,38 +290,38 @@ export default class Chart {
     if (!all.dots.length) return;
 
     //animation dots
-    for (let i = all.dots.length - 1; i >= 0; i--) {
-      let dot = all.dots[i];
-      if (dot.hasOwnProperty('nextValue')) {
-        let isEnd = false;
-        dot.value += dot.step;
-        dot.animationTime--;
-        dot.animationWidth =
-          ((dot.animationTimeInitial - dot.animationTime) * 100) /
-          dot.animationTimeInitial /
-          100;
-        if (dot.nextValue - dot.initialValue >= 0 && dot.value > dot.nextValue)
-          isEnd = true;
-        else if (
-          dot.nextValue - dot.initialValue < 0 &&
-          dot.value < dot.nextValue
-        )
-          isEnd = true;
-        if (isEnd) {
-          dot.value = dot.nextValue;
-          delete dot.nextValue;
-          delete dot.step;
-          delete dot.initialValue;
-          delete dot.animationTime;
-          delete dot.animationTimeInitial;
-          delete dot.animationWidth;
-        }
+    let dot = all.dots[all.dots.length - 1];
+    if (dot.hasOwnProperty('nextValue')) {
+      let isEnd = false;
+      dot.value += dot.step;
+      dot.animationTime--;
+      dot.animationWidth =
+        ((dot.animationTimeInitial - dot.animationTime) * 100) /
+        dot.animationTimeInitial /
+        100;
+      if (dot.nextValue - dot.initialValue >= 0 && dot.value > dot.nextValue)
+        isEnd = true;
+      else if (
+        dot.nextValue - dot.initialValue < 0 &&
+        dot.value < dot.nextValue
+      )
+        isEnd = true;
+      if (isEnd) {
+        dot.value = dot.nextValue;
+        delete dot.nextValue;
+        delete dot.step;
+        delete dot.initialValue;
+        delete dot.animationTime;
+        delete dot.animationTimeInitial;
+        delete dot.animationWidth;
+        this.newDotAnimateCheck();
       }
     }
     let draw = this.getDots('draw'),
       { dots, min, max, beforeFirst } = draw,
       lineLastDot = lineStart,
       restWidth = 0,
+      dotsLength = dots.length,
       beforeFirstMixed = false;
     if (
       beforeFirst &&
@@ -325,55 +331,48 @@ export default class Chart {
     ) {
       beforeFirstMixed = true;
     }
-    for (let i = dots.length - 1; i >= 0; i--) {
+    let partWidthBasic = lineView / (dotsLength - (!beforeFirstMixed ? 1 : 2));
+    for (let i = dotsLength - 1; i >= 0; i--) {
       let dot = dots[i],
         value = dot.value,
-        partOffset = 0,
-        partWidth = lineView / (dots.length - 1);
+        partWidth = partWidthBasic;
       if (dot.animationWidth) {
         partWidth *= dot.animationWidth;
-        restWidth += lineView / (dots.length - 1) - partWidth;
-      }
-      if (i === 0 && beforeFirstMixed) {
-        lineLastDot -= restWidth;
+        restWidth += lineView / (dotsLength - 1) - partWidth;
       }
       dots[i].x = lineLastDot;
       dots[i].y =
         lineTop +
         lineHeight -
         lineHeight * (((value - min) * 100) / (max - min) / 100);
-      if (i === 0 && beforeFirstMixed) {
-        let dif = 1 - (lineLastDot - restWidth) * 100 / lineLastDot / 100;
-        // dots[i].y += restWidth / lineLastDot / 10;
-      }
       if (!dots[i].y) dots[i].y = lineHeight / 2 + lineTop;
       if (beforeFirstMixed) {
         lineLastDot -= partWidth;
       } else {
         // TODO: Glitch on little count of dots
-        lineLastDot -= partWidth + restWidth / (dots.length - 1);
+        lineLastDot -= partWidth;
+        lineLastDot -= restWidth / (dotsLength - 1);
       }
     }
-
     context.beginPath();
     context.lineWidth = width;
     context.strokeStyle = color;
     context.lineJoin = 'round';
-    if (gradient.bool) {
-      let gradient = context.createLinearGradient(0, lineTop, 0, lineHeight);
-      gradient.addColorStop(0, gradient.from);
-      gradient.addColorStop(1, gradient.to);
-      context.fillStyle = gradient;
+    if (gradient.enable) {
+      let fill = context.createLinearGradient(0, lineTop, 0, lineHeight);
+      fill.addColorStop(0, gradient.from);
+      fill.addColorStop(1, gradient.to);
+      context.fillStyle = fill;
       context.lineTo(lineStart, lineHeight);
     }
     for (let i = dots.length - 1; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
     }
-    if (gradient.bool) context.lineTo(lineEnd, lineBottom);
+    if (gradient.enable) context.lineTo(lineEnd, lineBottom);
     context.fill();
     context.stroke();
-    if (gradient.bool) {
+    if (gradient.enable) {
       context.beginPath();
       context.lineWidth = width + 1;
       context.strokeStyle = background;
@@ -381,6 +380,15 @@ export default class Chart {
       context.lineTo(lineEnd, element.clientHeight);
       context.lineTo(lineStart, element.clientHeight);
       context.lineTo(lineStart, 0);
+      context.stroke();
+    }
+    // hide left offset behind block
+    if (offset.left) {
+      context.beginPath();
+      context.lineWidth = 1;
+      context.strokeStyle = background;
+      context.rect(0, 0, offset.left - 2, element.clientHeight);
+      context.fill();
       context.stroke();
     }
   }
