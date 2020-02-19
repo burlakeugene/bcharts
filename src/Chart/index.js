@@ -1,6 +1,36 @@
+export const generateDate = time => {
+  let result = '';
+  time = new Date(time);
+  const getDay = day => {
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day];
+    },
+    getMonth = month => {
+      return [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ][month];
+    };
+  result =
+    (time.getHours() < 10 ? '0' + time.getHours() : time.getHours()) +
+    ':' +
+    (time.getMinutes() < 10 ? '0' + time.getMinutes() : time.getMinutes()) +
+    ':' +
+    (time.getSeconds() < 10 ? '0' + time.getSeconds() : time.getSeconds());
+  return result;
+};
+
 export default class Chart {
   constructor({ canvas = false }) {
-    this.tabIsActive = true;
     this.state = {
       canvas: {
         element: canvas,
@@ -36,12 +66,12 @@ export default class Chart {
         }
       },
       offset: {
-        left: 20,
-        right: 20,
+        left: 30,
+        right: 30,
         top: 20,
-        bottom: 20
+        bottom: 40
       },
-      tick: 500,
+      tick: 1000,
       dotsLimit: 30,
       dotsOffset: 0,
       dots: []
@@ -52,7 +82,7 @@ export default class Chart {
   runDotsReceive() {
     let { tick } = this.state;
     setInterval(() => {
-      this.tabIsActive ? this.newDotAnimate() : this.newDot();
+      !document.hidden ? this.newDotAnimate() : this.newDot();
     }, tick);
   }
   checkErrors() {
@@ -88,24 +118,22 @@ export default class Chart {
     value = value || prevValue + randomValue;
     if (dotsOffset) dotsOffset++;
     let animationTime = (60 * tick) / 1000,
-      step = (value - prevValue) / animationTime;
-    dots.push({
-      value: prevValue,
-      initialValue: prevValue,
-      nextValue: value,
-      animationTime,
-      animationTimeInitial: animationTime,
-      animationWidth: 0,
-      step,
-      time
-    });
+      step = (value - prevValue) / animationTime,
+      dot = {
+        value: prevValue,
+        initialValue: prevValue,
+        nextValue: value,
+        animationTime,
+        animationTimeInitial: animationTime,
+        animationWidth: 0,
+        step,
+        time
+      };
+    dots.push(dot);
     this.setState({
       dotsOffset,
       dots
     });
-  }
-  newDotAnimateCheck(){
-
   }
   setState(options, callback) {
     for (let option in options) {
@@ -312,7 +340,6 @@ export default class Chart {
         delete dot.animationTime;
         delete dot.animationTimeInitial;
         delete dot.animationWidth;
-        this.newDotAnimateCheck();
       }
     }
     let draw = this.getDots('draw'),
@@ -338,12 +365,12 @@ export default class Chart {
         partWidth *= dot.animationWidth;
         restWidth += lineView / (dotsLength - 1) - partWidth;
       }
-      dots[i].x = lineLastDot;
-      dots[i].y =
+      dot.x = lineLastDot;
+      dot.y =
         lineTop +
         lineHeight -
         lineHeight * (((value - min) * 100) / (max - min) / 100);
-      if (!dots[i].y) dots[i].y = lineHeight / 2 + lineTop;
+      if (!dot.y) dot.y = lineHeight / 2 + lineTop;
       if (beforeFirstMixed) {
         lineLastDot -= partWidth;
       } else {
@@ -389,6 +416,23 @@ export default class Chart {
       context.fill();
       context.stroke();
     }
+
+    //time and value
+    let timeCounts = 6;
+    for (let i = 0; i <= timeCounts; i++) {
+      let x = lineEnd + (lineView / timeCounts * i) - 1,
+        dot = dots.find((dot) => {
+          return dot.x >= x
+        })
+      context.font = '100 12px sans-serif';
+        context.fillStyle = '#fff';
+        context.textAlign = 'center';
+        context.fillText(
+          dot ? generateDate(dot.time) : '',
+          x,
+          element.clientHeight - 15
+        );
+    }
   }
   listeners() {
     let { canvas } = this.state,
@@ -413,11 +457,5 @@ export default class Chart {
         });
       }
     });
-    window.addEventListener('focus', () => {
-      this.tabIsActive = true;
-    })
-    window.addEventListener('blur', () => {
-      this.tabIsActive = false;
-    })
   }
 }
