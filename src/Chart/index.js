@@ -30,7 +30,7 @@ export const generateDate = time => {
 };
 
 export default class Chart {
-  constructor({ canvas = false }) {
+  constructor({ canvas = false, data = [], limit = 20, offset = 0 }) {
     this.state = {
       canvas: {
         element: canvas,
@@ -71,19 +71,19 @@ export default class Chart {
         top: 20,
         bottom: 40
       },
-      tick: 1000,
-      dotsLimit: 30,
-      dotsOffset: 0,
-      dots: []
+      data: {
+        offset,
+        limit,
+        array: data
+      },
+      timeline: {
+        enable: true,
+        each: 6
+      },
+      timeStamp: +new Date()
     };
     this.checkErrors();
     this.init();
-  }
-  runDotsReceive() {
-    let { tick } = this.state;
-    setInterval(() => {
-      !document.hidden ? this.newDotAnimate() : this.newDot();
-    }, tick);
   }
   checkErrors() {
     let { canvas } = this.state;
@@ -92,47 +92,16 @@ export default class Chart {
   }
   newDot(value) {
     let { dots } = this.getDots('all'),
-      { dotsOffset, tick } = this.state,
+      { data } = this.state,
       lastDot = dots[dots.length - 1],
       prevValue = lastDot ? lastDot.value : 0,
       randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
       time = +new Date();
     value = value || prevValue + randomValue;
-    if (dotsOffset) dotsOffset++;
+    if (data.offset) data.offset++;
     dots.push({
       value,
       time
-    });
-    this.setState({
-      dotsOffset,
-      dots
-    });
-  }
-  newDotAnimate(value) {
-    let { dots } = this.getDots('all'),
-      { dotsOffset, tick } = this.state,
-      lastDot = dots[dots.length - 1],
-      prevValue = lastDot ? lastDot.value : 0,
-      randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
-      time = +new Date();
-    value = value || prevValue + randomValue;
-    if (dotsOffset) dotsOffset++;
-    let animationTime = (60 * tick) / 1000,
-      step = (value - prevValue) / animationTime,
-      dot = {
-        value: prevValue,
-        initialValue: prevValue,
-        nextValue: value,
-        animationTime,
-        animationTimeInitial: animationTime,
-        animationWidth: 0,
-        step,
-        time
-      };
-    dots.push(dot);
-    this.setState({
-      dotsOffset,
-      dots
     });
   }
   setState(options, callback) {
@@ -148,46 +117,39 @@ export default class Chart {
     canvas.element.width = 1;
     canvas.element.width = width;
   }
-  resize() {}
   init() {
-    window.addEventListener('resize', this.resize.bind(this));
     this.listeners();
     this.render();
-    this.runDotsReceive();
   }
   render() {
     this.clearCanvas();
     this.drawBackground();
     this.drawLine();
+    this.drawTime();
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
   getDots(type) {
-    let { dots, dotsOffset, dotsLimit } = this.state,
-      draw = [...dots],
-      beforeFirst = false;
-    if (dotsOffset) {
-      let rest = draw.length - dotsOffset,
-        moreThenLimit = rest > dotsLimit;
+    let { data } = this.state,
+      { array, limit, offset } = data,
+      draw = [...array];
+    if (offset) {
+      let rest = draw.length - offset,
+        moreThenLimit = rest > limit;
       if (!moreThenLimit) {
-        dotsOffset = draw.length - dotsLimit;
-        this.setState({
-          dotsOffset
-        });
+        data.offset = draw.length - limit;
       }
-      draw = draw.slice(0, moreThenLimit ? rest : dotsLimit);
+      draw = draw.slice(0, moreThenLimit ? rest : limit);
     }
-    if (draw.length > dotsLimit) {
-      beforeFirst = draw[draw.length - dotsLimit - 1];
-      draw = draw.slice(draw.length - dotsLimit, draw.length);
-      if (beforeFirst && !dotsOffset) draw = [beforeFirst, ...draw];
+    if (draw.length > limit) {
+      draw = draw.slice(draw.length - limit, draw.length);
     }
     let drawMax = draw.length ? draw[0].value : 0,
       drawMin = draw.length ? draw[0].value : 0,
-      max = dots.length ? dots[0].value : 0,
-      min = dots.length ? dots[0].value : 0;
-    for (let i = 0; i <= dots.length - 1; i++) {
-      let { value } = dots[i];
+      max = array.length ? array[0].value : 0,
+      min = array.length ? array[0].value : 0;
+    for (let i = 0; i <= array.length - 1; i++) {
+      let { value } = array[i];
       if (value > max) max = value;
       if (value < min) min = value;
     }
@@ -198,23 +160,23 @@ export default class Chart {
     }
     let result = {
       all: {
-        dots,
+        dots: array,
         max,
         min
       },
       draw: {
         dots: draw,
         max: drawMax,
-        min: drawMin,
-        beforeFirst
+        min: drawMin
       },
-      last: dots[dots.length - 1],
-      first: dots[0]
+      last: array[array.length - 1],
+      first: array[0]
     };
     return type && result[type] ? result[type] : result;
   }
   getIndicatorCoords() {
     let { canvas, indicator, offset } = this.state,
+      y,
       { element } = canvas,
       { styles, animation } = indicator,
       { draw, last } = this.getDots(),
@@ -225,7 +187,6 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords();
-    let y = styles.width * animation.scaleTo * -1;
     if (last) {
       y =
         lineTop +
@@ -299,12 +260,8 @@ export default class Chart {
       lineHeight
     };
   }
-  drawLine() {
-    let { canvas, line, view, offset, dotsLimit, dotsOffset } = this.state,
-      { gradient, color, width } = line.styles,
-      { background } = view.styles,
-      { context, element } = canvas,
-      all = this.getDots('all'),
+  drawTime() {
+    let draw = this.getDots('draw'),
       {
         lineStart,
         lineEnd,
@@ -312,72 +269,56 @@ export default class Chart {
         lineTop,
         lineBottom,
         lineHeight
-      } = this.getLineDrawCoords();
-    if (!all.dots.length) return;
-
-    //animation dots
-    let dot = all.dots[all.dots.length - 1];
-    if (dot.hasOwnProperty('nextValue')) {
-      let isEnd = false;
-      dot.value += dot.step;
-      dot.animationTime--;
-      dot.animationWidth =
-        ((dot.animationTimeInitial - dot.animationTime) * 100) /
-        dot.animationTimeInitial /
-        100;
-      if (dot.nextValue - dot.initialValue >= 0 && dot.value > dot.nextValue)
-        isEnd = true;
-      else if (
-        dot.nextValue - dot.initialValue < 0 &&
-        dot.value < dot.nextValue
-      )
-        isEnd = true;
-      if (isEnd) {
-        dot.value = dot.nextValue;
-        delete dot.nextValue;
-        delete dot.step;
-        delete dot.initialValue;
-        delete dot.animationTime;
-        delete dot.animationTimeInitial;
-        delete dot.animationWidth;
+      } = this.getLineDrawCoords(),
+      { canvas, timeline, timeStamp } = this.state,
+      { element, context } = canvas,
+      { dots } = draw;
+    if (!timeline.enable) return;
+    let d = Math.ceil((dots.length - 1) / timeline.each);
+    for (let i = 0; i <= dots.length - 1; i++) {
+      console.log(i);
+      if (!(i % d) || i === 0 || i === dots.length - 1) {
+        let dot = dots[i];
+        context.font = '100 12px sans-serif';
+        context.fillStyle = '#fff';
+        context.textAlign = 'center';
+        context.textBaseline = 'bottom';
+        context.fillText(
+          generateDate(dot && dot.time ? dot.time : timeStamp),
+          dot ? dot.x : 0,
+          element.clientHeight - 12
+        );
       }
     }
-    let draw = this.getDots('draw'),
-      { dots, min, max, beforeFirst } = draw,
+  }
+  drawLine() {
+    let { canvas, line, view } = this.state,
+      { gradient, color, width } = line.styles,
+      { background } = view.styles,
+      { context, element } = canvas,
+      {
+        lineStart,
+        lineEnd,
+        lineView,
+        lineTop,
+        lineBottom,
+        lineHeight
+      } = this.getLineDrawCoords(),
+      draw = this.getDots('draw'),
+      { dots, min, max } = draw,
       lineLastDot = lineStart,
-      restWidth = 0,
-      dotsLength = dots.length,
-      beforeFirstMixed = false;
-    if (
-      beforeFirst &&
-      dots.find(item => {
-        return item.animationWidth;
-      })
-    ) {
-      beforeFirstMixed = true;
-    }
-    let partWidthBasic = lineView / (dotsLength - (!beforeFirstMixed ? 1 : 2));
-    for (let i = dotsLength - 1; i >= 0; i--) {
+      dotsLength = dots.length - 1;
+    for (let i = dotsLength; i >= 0; i--) {
       let dot = dots[i],
         value = dot.value,
-        partWidth = partWidthBasic;
-      if (dot.animationWidth) {
-        partWidth *= dot.animationWidth;
-        restWidth += lineView / (dotsLength - 1) - partWidth;
-      }
+        partWidth = lineView / dotsLength;
       dot.x = lineLastDot;
       dot.y =
         lineTop +
         lineHeight -
         lineHeight * (((value - min) * 100) / (max - min) / 100);
       if (!dot.y) dot.y = lineHeight / 2 + lineTop;
-      if (beforeFirstMixed) {
-        lineLastDot -= partWidth;
-      } else {
-        // TODO: Glitch on little count of dots
-        lineLastDot -= partWidth;
-        lineLastDot -= restWidth / (dotsLength - 1);
-      }
+      lineLastDot -= partWidth;
     }
     context.beginPath();
     context.lineWidth = width;
@@ -390,7 +331,7 @@ export default class Chart {
       context.fillStyle = fill;
       context.lineTo(lineStart, lineHeight);
     }
-    for (let i = dots.length - 1; i >= 0; i--) {
+    for (let i = dotsLength; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
     }
@@ -407,32 +348,6 @@ export default class Chart {
       context.lineTo(lineStart, 0);
       context.stroke();
     }
-    // hide left offset behind block
-    if (offset.left) {
-      context.beginPath();
-      context.lineWidth = 1;
-      context.strokeStyle = background;
-      context.rect(0, 0, offset.left - 2, element.clientHeight);
-      context.fill();
-      context.stroke();
-    }
-
-    //time and value
-    let timeCounts = 6;
-    for (let i = 0; i <= timeCounts; i++) {
-      let x = lineEnd + (lineView / timeCounts * i) - 1,
-        dot = dots.find((dot) => {
-          return dot.x >= x
-        })
-      context.font = '100 12px sans-serif';
-        context.fillStyle = '#fff';
-        context.textAlign = 'center';
-        context.fillText(
-          dot ? generateDate(dot.time) : '',
-          x,
-          element.clientHeight - 15
-        );
-    }
   }
   listeners() {
     let { canvas } = this.state,
@@ -448,13 +363,12 @@ export default class Chart {
       x = 0;
     });
     element.addEventListener('mousemove', e => {
-      let { dotsOffset } = this.state;
+      let { data } = this.state;
       if (pushed) {
-        dotsOffset += e.clientX - x;
+        let nextOffset = e.clientX - x;
+        data.offset += nextOffset;
+        if (data.offset < 0) data.offset = 0;
         x = e.clientX;
-        this.setState({
-          dotsOffset: dotsOffset >= 0 ? dotsOffset : 0
-        });
       }
     });
   }
