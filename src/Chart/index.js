@@ -1,5 +1,6 @@
 export default class Chart {
   constructor({ canvas = false }) {
+    this.tabIsActive = true;
     this.state = {
       canvas: {
         element: canvas,
@@ -51,10 +52,7 @@ export default class Chart {
   runDotsReceive() {
     let { tick } = this.state;
     setInterval(() => {
-      // this.newDot();
-      this.newDotAnimate();
-      // this.newDotAnimate();
-      // this.newDotAnimate();
+      this.tabIsActive ? this.newDotAnimate() : this.newDot();
     }, tick);
   }
   checkErrors() {
@@ -415,5 +413,11 @@ export default class Chart {
         });
       }
     });
+    window.addEventListener('focus', () => {
+      this.tabIsActive = true;
+    })
+    window.addEventListener('blur', () => {
+      this.tabIsActive = false;
+    })
   }
 }
