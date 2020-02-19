@@ -78,7 +78,7 @@ export default class Chart {
       },
       timeline: {
         enable: true,
-        each: 6
+        count: 5
       },
       timeStamp: +new Date()
     };
@@ -272,23 +272,31 @@ export default class Chart {
       } = this.getLineDrawCoords(),
       { canvas, timeline, timeStamp } = this.state,
       { element, context } = canvas,
-      { dots } = draw;
+      dots = [...draw.dots],
+      timeArray = [];
     if (!timeline.enable) return;
-    let d = Math.ceil((dots.length - 1) / timeline.each);
-    for (let i = 0; i <= dots.length - 1; i++) {
-      console.log(i);
-      if (!(i % d) || i === 0 || i === dots.length - 1) {
-        let dot = dots[i];
-        context.font = '100 12px sans-serif';
-        context.fillStyle = '#fff';
-        context.textAlign = 'center';
-        context.textBaseline = 'bottom';
-        context.fillText(
-          generateDate(dot && dot.time ? dot.time : timeStamp),
-          dot ? dot.x : 0,
-          element.clientHeight - 12
-        );
+    let count = timeline.count,
+      each = Math.ceil(dots.length / count),
+      counter = 0;
+    for (let i = dots.length - 1; i >= 0; i--) {
+      if (dots.length <= count) timeArray.push(dots[i]);
+      else {
+        if (counter === each) counter = 0;
+        if (!counter) timeArray.push(dots[i]);
+        counter++;
       }
+    }
+    for (let i = 0; i <= timeArray.length - 1; i++) {
+      let dot = timeArray[i];
+      context.font = '100 12px sans-serif';
+      context.fillStyle = '#fff';
+      context.textAlign = 'center';
+      context.textBaseline = 'bottom';
+      context.fillText(
+        generateDate(dot && dot.time ? dot.time : timeStamp),
+        dot ? dot.x : 0,
+        element.clientHeight - 12
+      );
     }
   }
   drawLine() {
@@ -365,10 +373,9 @@ export default class Chart {
     element.addEventListener('mousemove', e => {
       let { data } = this.state;
       if (pushed) {
-        let nextOffset = e.clientX - x;
-        data.offset += nextOffset;
-        if (data.offset < 0) data.offset = 0;
+        let nextOffset = data.offset + e.clientX - x;
         x = e.clientX;
+        data.offset = nextOffset < 0 ? 0 : nextOffset;
       }
     });
   }
