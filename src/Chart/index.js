@@ -82,6 +82,7 @@ export default class Chart {
       },
       valuesLine: {
         enable: true,
+        resize: true,
         count: 10,
         digits: 2
       },
@@ -327,15 +328,15 @@ export default class Chart {
       text: max,
       y: lineTop
     });
-    let yStep = (lineHeight / (count - 1)),
+    let yStep = lineHeight / (count - 1),
       yStart = lineTop + yStep,
       valueStep = (max - min) / (count - 1);
-    for(let i = 1; i <= count - 2; i++){
+    for (let i = 1; i <= count - 2; i++) {
       valuesArray.push({
         text: max - valueStep * i,
         y: yStart
       });
-      yStart += (yStep);
+      yStart += yStep;
     }
     valuesArray.push({
       text: min,
@@ -413,41 +414,107 @@ export default class Chart {
     }
   }
   listeners() {
-    let { canvas } = this.state,
+    let { canvas, offset } = this.state,
       { element } = canvas,
+      initialOffset = { ...offset },
       pushed = false,
       x = 0,
-      y = 0;
+      y = 0,
+      stopFunc = e => {
+        pushed = false;
+        x = 0;
+        y = 0;
+      };
+
+    element.addEventListener('mouseup', stopFunc);
+    element.addEventListener('mouseleave', stopFunc);
+
     element.addEventListener('mousedown', e => {
-      pushed = true;
+      pushed = {
+        x: e.clientX,
+        y: e.clientY
+      };
       x = e.clientX;
       y = e.clientY;
     });
-    element.addEventListener('mouseup', e => {
-      pushed = false;
-      x = 0;
-      y = 0;
-    });
+
     element.addEventListener('mousemove', e => {
-      let { data, offset } = this.state,
-        initialOffset = offset;
+      let { data, valuesLine } = this.state,
+        elementOffset = element.getBoundingClientRect();
+
+      //line view
+      if (
+        e.clientX >= elementOffset.left &&
+        e.clientX <= elementOffset.left + elementOffset.width - offset.right
+      ) {
+        element.style.cursor = 'crosshair';
+        if (pushed) {
+          let nextOffset = data.offset + e.clientX - x;
+          data.offset = nextOffset < 0 ? 0 : nextOffset;
+        }
+      }
+
+      //values panel
+      if (
+        valuesLine.enable &&
+        valuesLine.resize &&
+        e.clientX >= elementOffset.left + elementOffset.width - offset.right
+      ) {
+        element.style.cursor = 'row-resize';
+        if (pushed) {
+          let nextTop = y - e.clientY,
+            nextBottom = e.clientY - y,
+            zoomIn = e.clientY > y,
+            zoomOut = e.clientY < y;
+          if (zoomIn) {
+            let maxTop =
+                (elementOffset.height +
+                  initialOffset.top -
+                  initialOffset.bottom) /
+                2,
+              maxBottom =
+                (elementOffset.height +
+                  initialOffset.bottom -
+                  initialOffset.top) /
+                2;
+            offset.top = (() => {
+              if (offset.top - nextTop < maxTop) {
+                return offset.top - nextTop;
+              } else {
+                return maxTop;
+              }
+            })();
+            offset.bottom = (() => {
+              if (offset.bottom + nextBottom < maxBottom) {
+                return offset.bottom + nextBottom;
+              } else {
+                return maxBottom;
+              }
+            })();
+          }
+          if (zoomOut) {
+            offset.top = (() => {
+              if (offset.top - nextTop > initialOffset.top) {
+                return offset.top - nextTop;
+              } else {
+                return initialOffset.top;
+              }
+            })();
+            offset.bottom = (() => {
+              if (offset.bottom + nextBottom > initialOffset.bottom) {
+                return offset.bottom + nextBottom;
+              } else {
+                return initialOffset.bottom;
+              }
+            })();
+          }
+        }
+      }
+
       if (pushed) {
-        let nextOffset = data.offset + e.clientX - x;
-        data.offset = nextOffset < 0 ? 0 : nextOffset;
-        // if(e.clientY < y){
-        //   offset.top -= e.clientY - y;
-        //   offset.bottom += y - e.clientY;
-        // }
-        // else if(e.clientY > y){
-        //   offset.top-= e.clientY - y;
-        //   offset.bottom += y - e.clientY;
-        // }
         x = e.clientX;
         y = e.clientY;
       }
-    });
-    element.addEventListener('scroll', e => {
-      console.log(e);
     });
   }
 }
