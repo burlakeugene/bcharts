@@ -67,7 +67,7 @@ export default class Chart {
       },
       offset: {
         left: 30,
-        right: 30,
+        right: 60,
         top: 20,
         bottom: 40
       },
@@ -76,9 +76,14 @@ export default class Chart {
         limit,
         array: data
       },
-      timeline: {
+      timeLine: {
         enable: true,
         count: 5
+      },
+      valuesLine: {
+        enable: true,
+        count: 10,
+        digits: 2
       },
       timeStamp: +new Date()
     };
@@ -125,7 +130,8 @@ export default class Chart {
     this.clearCanvas();
     this.drawBackground();
     this.drawLine();
-    this.drawTime();
+    this.drawTimes();
+    this.drawValues();
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
@@ -260,7 +266,7 @@ export default class Chart {
       lineHeight
     };
   }
-  drawTime() {
+  drawTimes() {
     let draw = this.getDots('draw'),
       {
         lineStart,
@@ -270,24 +276,27 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      { canvas, timeline, timeStamp } = this.state,
+      { canvas, timeLine, timeStamp } = this.state,
+      { enable, count } = timeLine,
       { element, context } = canvas,
       dots = [...draw.dots],
-      timeArray = [];
-    if (!timeline.enable) return;
-    let count = timeline.count,
-      each = Math.ceil(dots.length / count),
+      timesArray = [];
+    if (!enable) return;
+    let each = Math.ceil(dots.length / count),
       counter = 0;
     for (let i = dots.length - 1; i >= 0; i--) {
-      if (dots.length <= count) timeArray.push(dots[i]);
+      if (dots.length <= count) timesArray.push(dots[i]);
       else {
         if (counter === each) counter = 0;
-        if (!counter) timeArray.push(dots[i]);
+        if (!counter) timesArray.push(dots[i]);
         counter++;
+        if (i === 0 && counter / each >= 1) {
+          timesArray.push(dots[i]);
+        }
       }
     }
-    for (let i = 0; i <= timeArray.length - 1; i++) {
-      let dot = timeArray[i];
+    for (let i = 0; i <= timesArray.length - 1; i++) {
+      let dot = timesArray[i];
       context.font = '100 12px sans-serif';
       context.fillStyle = '#fff';
       context.textAlign = 'center';
@@ -296,6 +305,52 @@ export default class Chart {
         generateDate(dot && dot.time ? dot.time : timeStamp),
         dot ? dot.x : 0,
         element.clientHeight - 12
+      );
+    }
+  }
+  drawValues() {
+    let { max, min } = this.getDots('draw'),
+      {
+        lineStart,
+        lineEnd,
+        lineView,
+        lineTop,
+        lineBottom,
+        lineHeight
+      } = this.getLineDrawCoords(),
+      { canvas, valuesLine } = this.state,
+      { count, enable, digits } = valuesLine,
+      { element, context } = canvas,
+      valuesArray = [];
+    if (!enable) return;
+    valuesArray.push({
+      text: max,
+      y: lineTop
+    });
+    let yStep = (lineHeight / (count - 1)),
+      yStart = lineTop + yStep,
+      valueStep = (max - min) / (count - 1);
+    for(let i = 1; i <= count - 2; i++){
+      valuesArray.push({
+        text: max - valueStep * i,
+        y: yStart
+      });
+      yStart += (yStep);
+    }
+    valuesArray.push({
+      text: min,
+      y: lineBottom
+    });
+    for (let i = 0; i <= valuesArray.length - 1; i++) {
+      let value = valuesArray[i];
+      context.font = '100 12px sans-serif';
+      context.fillStyle = '#fff';
+      context.textAlign = 'right';
+      context.textBaseline = 'middle';
+      context.fillText(
+        value.text.toFixed(digits),
+        element.clientWidth - 6,
+        value.y
       );
     }
   }
@@ -361,22 +416,38 @@ export default class Chart {
     let { canvas } = this.state,
       { element } = canvas,
       pushed = false,
-      x = 0;
+      x = 0,
+      y = 0;
     element.addEventListener('mousedown', e => {
       pushed = true;
       x = e.clientX;
+      y = e.clientY;
     });
     element.addEventListener('mouseup', e => {
       pushed = false;
       x = 0;
+      y = 0;
     });
     element.addEventListener('mousemove', e => {
-      let { data } = this.state;
+      let { data, offset } = this.state,
+        initialOffset = offset;
       if (pushed) {
         let nextOffset = data.offset + e.clientX - x;
-        x = e.clientX;
         data.offset = nextOffset < 0 ? 0 : nextOffset;
+        // if(e.clientY < y){
+        //   offset.top -= e.clientY - y;
+        //   offset.bottom += y - e.clientY;
+        // }
+        // else if(e.clientY > y){
+        //   offset.top-= e.clientY - y;
+        //   offset.bottom += y - e.clientY;
+        // }
+        x = e.clientX;
+        y = e.clientY;
       }
+    });
+    element.addEventListener('scroll', e => {
+      console.log(e);
     });
   }
 }
