@@ -79,11 +79,33 @@ export default class Chart {
       target: {
         enable: true,
         coords: {
-          x: false,
-          y: false
+          x: 0,
+          y: 0
         },
         styles: {
           color: 'rgba(255, 255, 255, 0.5)',
+          width: 1
+        }
+      },
+      hovered: {
+        enable: true,
+        styles: {
+          color: '#fff',
+          width: 4
+        },
+        animation: {
+          time: 300
+        },
+        array: []
+      },
+      grid: {
+        enable: true,
+        steps: {
+          x: 20,
+          y: 20
+        },
+        styles: {
+          color: 'rgba(255, 255, 255, 0.1)',
           width: 1
         }
       },
@@ -99,6 +121,7 @@ export default class Chart {
       },
       timeStamp: +new Date()
     };
+    this.state.initialOffset = { ...this.state.offset };
     this.checkErrors();
     this.init();
   }
@@ -107,14 +130,15 @@ export default class Chart {
     if (!canvas.isCanvas)
       throw new Error(canvas.element + ' is not a canvas element');
   }
-  newDot(value) {
+  newDot({ value = false, time = false } = {}) {
     let { dots } = this.getDots('all'),
       { data } = this.state,
       lastDot = dots[dots.length - 1],
       prevValue = lastDot ? lastDot.value : 0,
       randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
-      time = +new Date();
-    value = value || prevValue + randomValue;
+      currentTime = +new Date();
+    time = time || currentTime;
+    value = parseFloat(value) || value === 0 ? value : prevValue + randomValue;
     if (data.offset) data.offset++;
     dots.push({
       value,
@@ -146,6 +170,7 @@ export default class Chart {
     this.drawValues();
     this.drawIndicator();
     this.drawTarget();
+    this.drawHoveredDot();
     requestAnimationFrame(this.render.bind(this));
   }
   getDots(type) {
@@ -217,7 +242,7 @@ export default class Chart {
       if (y < lineTop) y = lineTop;
     }
     return {
-      x: element.clientWidth - (offset.right || 0) - styles.width / 2,
+      x: element.clientWidth - (offset.right || 0),
       y
     };
   }
@@ -426,27 +451,103 @@ export default class Chart {
     }
   }
   drawTarget() {
-    let { canvas, offset, target } = this.state,
+    let { canvas, offset, target, initialOffset } = this.state,
       { styles, coords } = target,
       { x, y } = coords,
       { element, context } = canvas;
     if (!target.enable || !x || !y) return;
-
     context.lineWidth = styles.width;
     context.strokeStyle = styles.color;
     context.beginPath();
-    context.moveTo(0 + offset.left, y);
-    context.lineTo(element.clientWidth - offset.right, y);
+    context.moveTo(0 + initialOffset.left, y);
+    context.lineTo(element.clientWidth - initialOffset.right, y);
     context.stroke();
     context.beginPath();
-    context.moveTo(x, 0 + offset.top);
-    context.lineTo(x, element.clientHeight - offset.bottom);
+    context.moveTo(x, 0 + initialOffset.top);
+    context.lineTo(x, element.clientHeight - initialOffset.bottom);
     context.stroke();
   }
+  drawHoveredDot() {
+    let { canvas, offset, target, initialOffset, hovered } = this.state,
+      draw = this.getDots('draw'),
+      dots = [...draw.dots],
+      { coords } = target,
+      { x, y } = coords,
+      { element, context } = canvas,
+      { styles, array, enable, animation } = hovered,
+      filteredArray = [],
+      newArray = [],
+      animationStep = 1 / 60 / (animation.time / 1000),
+      current = false;
+    if (!enable) return;
+    for (let i = 0; i <= dots.length - 1; i++) {
+      let dot = dots[i],
+        dotNext = dots[i + 1];
+      if (dotNext && x >= dot.x && x <= dotNext.x) {
+        current = (dotNext.x + dot.x) / 2 <= x ? dotNext : dot;
+      }
+      let item = array.find(item => {
+        return item.x === dot.x && item.y === dot.y && item.value === dot.value;
+      });
+      if (item) {
+        filteredArray.push(item);
+      }
+    }
+    array = filteredArray;
+    for (let i = 0; i <= array.length - 1; i++) {
+      let dot = array[i],
+        save = true;
+      // console.log(dot.animation.state);
+      if (dot.animation.new && dot.animation.state < 1) {
+        dot.animation.state += animationStep;
+      } else if (dot.animation.new && dot.animation.state >= 1 && (current.x !== dot.x)) {
+        dot.animation.new = false;
+      } else if (!dot.animation.new) {
+        dot.animation.state -= animationStep;
+        if(dot.animation.state <= 0){
+          save = false;
+        }
+      }
+      if (save){
+        newArray.push(dot);
+      }
+    }
+    array = [...newArray];
+
+    if (current) {
+      let isIsset = array.find(item => {
+        return (
+          item.x === current.x &&
+          item.y === current.y &&
+          item.value === current.value
+        );
+      });
+      if (!isIsset)
+        current.animation = {
+          new: true,
+          state: 0
+        };
+      array.push(current);
+    }
+    for (let i = 0; i <= array.length - 1; i++) {
+      let current = array[i];
+      context.beginPath();
+      context.arc(
+        current.x,
+        current.y,
+        styles.width * current.animation.state > 0 ? styles.width * current.animation.state : 0,
+        0,
+        2 * Math.PI
+      );
+      context.fillStyle = styles.color;
+      context.fill();
+      context.stroke();
+    }
+    hovered.array = array;
+  }
   listeners() {
-    let { canvas, offset, target } = this.state,
+    let { canvas, offset, target, initialOffset } = this.state,
       { element } = canvas,
-      initialOffset = { ...offset },
       pushed = false,
       x = 0,
       y = 0,
@@ -483,31 +584,34 @@ export default class Chart {
       let { data, valuesLine, timeLine } = this.state,
         elementOffset = element.getBoundingClientRect();
       targetClear();
+      element.style.cursor = 'default';
+
+      //target point
+      if (
+        e.clientX >= elementOffset.left + initialOffset.left + 1 &&
+        e.clientX <=
+          elementOffset.left + elementOffset.width - initialOffset.right &&
+        e.clientY >= elementOffset.top + initialOffset.top &&
+        e.clientY <= elementOffset.bottom - initialOffset.bottom
+      ) {
+        if (target.enable) {
+          element.style.cursor = 'crosshair';
+        }
+        target.coords = {
+          x: e.clientX - elementOffset.left,
+          y: e.clientY - elementOffset.top
+        };
+      }
 
       //line view
       if (
         e.clientX >= elementOffset.left &&
         e.clientX <= elementOffset.left + elementOffset.width - offset.right
       ) {
-        element.style.cursor = 'default';
         if (pushed) {
           let nextOffset = data.offset + e.clientX - x;
           data.offset = nextOffset < 0 ? 0 : nextOffset;
         }
-      }
-
-      //target point
-      if (
-        e.clientX >= elementOffset.left + offset.left &&
-        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
-        e.clientY >= elementOffset.top + offset.top &&
-        e.clientY <= elementOffset.bottom - offset.bottom
-      ) {
-        element.style.cursor = 'crosshair';
-        target.coords = {
-          x: e.clientX - elementOffset.left,
-          y: e.clientY - elementOffset.top
-        };
       }
 
       //values panel
