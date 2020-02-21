@@ -76,6 +76,17 @@ export default class Chart {
         limit,
         array: data
       },
+      target: {
+        enable: true,
+        coords: {
+          x: false,
+          y: false
+        },
+        styles: {
+          color: 'rgba(255, 255, 255, 0.5)',
+          width: 1
+        }
+      },
       timeLine: {
         enable: true,
         count: 5
@@ -134,6 +145,7 @@ export default class Chart {
     this.drawTimes();
     this.drawValues();
     this.drawIndicator();
+    this.drawTarget();
     requestAnimationFrame(this.render.bind(this));
   }
   getDots(type) {
@@ -413,21 +425,50 @@ export default class Chart {
       context.stroke();
     }
   }
+  drawTarget() {
+    let { canvas, offset, target } = this.state,
+      { styles, coords } = target,
+      { x, y } = coords,
+      { element, context } = canvas;
+    if (!target.enable || !x || !y) return;
+
+    context.lineWidth = styles.width;
+    context.strokeStyle = styles.color;
+    context.beginPath();
+    context.moveTo(0 + offset.left, y);
+    context.lineTo(element.clientWidth - offset.right, y);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(x, 0 + offset.top);
+    context.lineTo(x, element.clientHeight - offset.bottom);
+    context.stroke();
+  }
   listeners() {
-    let { canvas, offset } = this.state,
+    let { canvas, offset, target } = this.state,
       { element } = canvas,
       initialOffset = { ...offset },
       pushed = false,
       x = 0,
       y = 0,
+      targetClear = () => {
+        target.coords = {
+          x: false,
+          y: false
+        };
+      },
       stopFunc = e => {
         pushed = false;
         x = 0;
         y = 0;
       };
 
-    element.addEventListener('mouseup', stopFunc);
-    element.addEventListener('mouseleave', stopFunc);
+    element.addEventListener('mouseup', () => {
+      stopFunc();
+    });
+    element.addEventListener('mouseleave', () => {
+      stopFunc();
+      targetClear();
+    });
 
     element.addEventListener('mousedown', e => {
       pushed = {
@@ -439,19 +480,34 @@ export default class Chart {
     });
 
     element.addEventListener('mousemove', e => {
-      let { data, valuesLine } = this.state,
+      let { data, valuesLine, timeLine } = this.state,
         elementOffset = element.getBoundingClientRect();
+      targetClear();
 
       //line view
       if (
         e.clientX >= elementOffset.left &&
         e.clientX <= elementOffset.left + elementOffset.width - offset.right
       ) {
-        element.style.cursor = 'crosshair';
+        element.style.cursor = 'default';
         if (pushed) {
           let nextOffset = data.offset + e.clientX - x;
           data.offset = nextOffset < 0 ? 0 : nextOffset;
         }
+      }
+
+      //target point
+      if (
+        e.clientX >= elementOffset.left + offset.left &&
+        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
+        e.clientY >= elementOffset.top + offset.top &&
+        e.clientY <= elementOffset.bottom - offset.bottom
+      ) {
+        element.style.cursor = 'crosshair';
+        target.coords = {
+          x: e.clientX - elementOffset.left,
+          y: e.clientY - elementOffset.top
+        };
       }
 
       //values panel
@@ -467,16 +523,19 @@ export default class Chart {
             zoomIn = e.clientY > y,
             zoomOut = e.clientY < y;
           if (zoomIn) {
-            let maxTop =
+            let maxOffset = 60,
+              maxTop =
                 (elementOffset.height +
                   initialOffset.top -
                   initialOffset.bottom) /
-                2,
+                  2 -
+                maxOffset,
               maxBottom =
                 (elementOffset.height +
                   initialOffset.bottom -
                   initialOffset.top) /
-                2;
+                  2 -
+                maxOffset;
             offset.top = (() => {
               if (offset.top - nextTop < maxTop) {
                 return offset.top - nextTop;
