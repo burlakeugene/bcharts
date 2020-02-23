@@ -5,10 +5,12 @@ window.addEventListener('load', () => {
   let canvas = document.querySelector('#chart');
   let chart = new Chart({
     canvas,
-    limit: 400,
+    limit: 50,
     offset: 0
   });
   setInterval(() => {
-    chart.newDot();
-  }, 0)
+    chart.newDot({
+      // value: 1
+    });
+  }, 500)
 });

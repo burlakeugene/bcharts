@@ -101,8 +101,9 @@ export default class Chart {
       grid: {
         enable: true,
         steps: {
-          x: 20,
-          y: 20
+          x: 120,
+          y: 120,
+          type: 'px'
         },
         styles: {
           color: 'rgba(255, 255, 255, 0.1)',
@@ -165,6 +166,7 @@ export default class Chart {
   render() {
     this.clearCanvas();
     this.drawBackground();
+    this.drawGrid();
     this.drawLine();
     this.drawTimes();
     this.drawValues();
@@ -356,29 +358,52 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      { canvas, valuesLine } = this.state,
+      { canvas, valuesLine, offset } = this.state,
       { count, enable, digits } = valuesLine,
       { element, context } = canvas,
       valuesArray = [];
     if (!enable) return;
-    valuesArray.push({
-      text: max,
-      y: lineTop
-    });
     let yStep = lineHeight / (count - 1),
       yStart = lineTop + yStep,
-      valueStep = (max - min) / (count - 1);
-    for (let i = 1; i <= count - 2; i++) {
+      yMiddle = (element.clientHeight + offset.top - offset.bottom) / 2;
+    if (min === max) {
       valuesArray.push({
-        text: max - valueStep * i,
-        y: yStart
+        text: max,
+        y: yMiddle
       });
-      yStart += yStep;
+      let topCount = (yMiddle - offset.top) / yStep,
+        bottomCount = (yMiddle - offset.top) / yStep;
+      for (let i = 1; i <= topCount; i++) {
+        valuesArray.push({
+          text: max + max * i,
+          y: yMiddle - yStep * i
+        });
+      }
+      for (let i = 1; i <= bottomCount; i++) {
+        valuesArray.push({
+          text: max - max * i,
+          y: yMiddle + yStep * i
+        });
+      }
+    } else {
+      valuesArray.push({
+        text: max,
+        y: lineTop
+      });
+      let valueStep = (max - min) / (count - 1);
+      for (let i = 1; i <= count - 2; i++) {
+        valuesArray.push({
+          text: max - valueStep * i,
+          y: yStart
+        });
+        yStart += yStep;
+      }
+      valuesArray.push({
+        text: min,
+        y: lineBottom
+      });
     }
-    valuesArray.push({
-      text: min,
-      y: lineBottom
-    });
+
     for (let i = 0; i <= valuesArray.length - 1; i++) {
       let value = valuesArray[i];
       context.font = '100 12px sans-serif';
@@ -436,8 +461,10 @@ export default class Chart {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
     }
-    if (gradient.enable) context.lineTo(lineEnd, lineBottom);
-    context.fill();
+    if (gradient.enable) {
+      context.lineTo(lineEnd, lineBottom);
+      context.fill();
+    }
     context.stroke();
     if (gradient.enable) {
       context.beginPath();
@@ -500,15 +527,19 @@ export default class Chart {
       // console.log(dot.animation.state);
       if (dot.animation.new && dot.animation.state < 1) {
         dot.animation.state += animationStep;
-      } else if (dot.animation.new && dot.animation.state >= 1 && (current.x !== dot.x)) {
+      } else if (
+        dot.animation.new &&
+        dot.animation.state >= 1 &&
+        current.x !== dot.x
+      ) {
         dot.animation.new = false;
       } else if (!dot.animation.new) {
         dot.animation.state -= animationStep;
-        if(dot.animation.state <= 0){
+        if (dot.animation.state <= 0) {
           save = false;
         }
       }
-      if (save){
+      if (save) {
         newArray.push(dot);
       }
     }
@@ -535,7 +566,9 @@ export default class Chart {
       context.arc(
         current.x,
         current.y,
-        styles.width * current.animation.state > 0 ? styles.width * current.animation.state : 0,
+        styles.width * current.animation.state > 0
+          ? styles.width * current.animation.state
+          : 0,
         0,
         2 * Math.PI
       );
@@ -545,8 +578,75 @@ export default class Chart {
     }
     hovered.array = array;
   }
+  drawGrid() {
+    let { canvas, grid, initialOffset } = this.state,
+      { element, context } = canvas,
+      { enable, steps, styles } = grid;
+    if (!enable) return;
+    context.lineWidth = styles.width;
+    context.strokeStyle = styles.color;
+    context.beginPath();
+    context.lineTo(0 + initialOffset.left, 0 + initialOffset.top);
+    context.lineTo(
+      element.clientWidth - initialOffset.right,
+      0 + initialOffset.top
+    );
+    context.lineTo(
+      element.clientWidth - initialOffset.right,
+      element.clientHeight - initialOffset.bottom
+    );
+    context.lineTo(
+      0 + initialOffset.left,
+      element.clientHeight - initialOffset.bottom
+    );
+    context.lineTo(0 + initialOffset.left, 0 + initialOffset.top);
+    context.stroke();
+    let xArray = [],
+      yArray = [],
+      isPx = steps.type && steps.type === 'px',
+      xStep =
+        (element.clientWidth - initialOffset.right - initialOffset.left) /
+        steps.x,
+      xStart = 0 + initialOffset.left,
+      yStep =
+        (element.clientHeight - initialOffset.top - initialOffset.bottom) /
+        steps.y,
+      yStart = 0 + initialOffset.top;
+    if(isPx){
+      for (let i = 1; i < xStep; i++) {
+        let x = xStart + i * steps.x;
+        xArray.push(x);
+      }
+      for (let i = 1; i < yStep; i++) {
+        let y = yStart + i * steps.y;
+        yArray.push(y);
+      }
+    }
+    else{
+      for (let i = 1; i < steps.x; i++) {
+        let x = xStart + i * xStep;
+        xArray.push(x);
+      }
+      for (let i = 1; i < steps.y; i++) {
+        let y = yStart + i * yStep;
+        yArray.push(y);
+      }
+    }
+    for (let i = 0; i <= xArray.length - 1; i++) {
+      context.beginPath();
+      context.lineTo(xArray[i], 0 + initialOffset.top);
+      context.lineTo(xArray[i], element.clientHeight - initialOffset.bottom);
+      context.stroke();
+    }
+    for (let i = 0; i <= yArray.length - 1; i++) {
+      context.beginPath();
+      context.lineTo(0 + initialOffset.left, yArray[i]);
+      context.lineTo(element.clientWidth - initialOffset.right, yArray[i]);
+      context.stroke();
+    }
+  }
   listeners() {
-    let { canvas, offset, target, initialOffset } = this.state,
+    let { canvas, offset, limit, target, initialOffset } = this.state,
       { element } = canvas,
       pushed = false,
       x = 0,
@@ -605,8 +705,10 @@ export default class Chart {
 
       //line view
       if (
-        e.clientX >= elementOffset.left &&
-        e.clientX <= elementOffset.left + elementOffset.width - offset.right
+        e.clientX >= elementOffset.left + offset.left &&
+        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
+        e.clientY >= elementOffset.top + initialOffset.top &&
+        e.clientY <= elementOffset.bottom - initialOffset.bottom
       ) {
         if (pushed) {
           let nextOffset = data.offset + e.clientX - x;
