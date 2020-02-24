@@ -67,7 +67,7 @@ export default class Chart {
       },
       offset: {
         left: 30,
-        right: 60,
+        right: 50,
         top: 20,
         bottom: 40
       },
@@ -101,9 +101,8 @@ export default class Chart {
       grid: {
         enable: true,
         steps: {
-          x: 120,
-          y: 120,
-          type: 'px'
+          x: 10,
+          y: 5
         },
         styles: {
           color: 'rgba(255, 255, 255, 0.1)',
@@ -521,10 +520,21 @@ export default class Chart {
       }
     }
     array = filteredArray;
+    if (current) {
+      array = array.map(item => {
+        if (
+          current.x !== item.x &&
+          current.y !== item.y &&
+          current.value !== item.value
+        ) {
+          item.animation.new = false;
+        }
+        return item;
+      });
+    }
     for (let i = 0; i <= array.length - 1; i++) {
       let dot = array[i],
         save = true;
-      // console.log(dot.animation.state);
       if (dot.animation.new && dot.animation.state < 1) {
         dot.animation.state += animationStep;
       } else if (
@@ -533,6 +543,7 @@ export default class Chart {
         current.x !== dot.x
       ) {
         dot.animation.new = false;
+        dot.animation.state = 1;
       } else if (!dot.animation.new) {
         dot.animation.state -= animationStep;
         if (dot.animation.state <= 0) {
@@ -540,6 +551,7 @@ export default class Chart {
         }
       }
       if (save) {
+        dot.animation.state = dot.animation.state > 1 ? 1 : dot.animation.state;
         newArray.push(dot);
       }
     }
@@ -612,7 +624,7 @@ export default class Chart {
         (element.clientHeight - initialOffset.top - initialOffset.bottom) /
         steps.y,
       yStart = 0 + initialOffset.top;
-    if(isPx){
+    if (isPx) {
       for (let i = 1; i < xStep; i++) {
         let x = xStart + i * steps.x;
         xArray.push(x);
@@ -621,8 +633,7 @@ export default class Chart {
         let y = yStart + i * steps.y;
         yArray.push(y);
       }
-    }
-    else{
+    } else {
       for (let i = 1; i < steps.x; i++) {
         let x = xStart + i * xStep;
         xArray.push(x);
