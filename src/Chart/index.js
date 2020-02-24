@@ -30,7 +30,14 @@ export const generateDate = time => {
 };
 
 export default class Chart {
-  constructor({ canvas = false, data = [], limit = 20, offset = 0 }) {
+  constructor({
+    canvas = false,
+    data = [],
+    limit = 20,
+    maxLimit = false,
+    minLimit = false,
+    offset = 0
+  }) {
     this.state = {
       canvas: {
         element: canvas,
@@ -73,7 +80,11 @@ export default class Chart {
       },
       data: {
         offset,
-        limit,
+        limit: {
+          value: limit,
+          max: maxLimit,
+          min: minLimit
+        },
         array: data
       },
       target: {
@@ -83,20 +94,13 @@ export default class Chart {
           y: 0
         },
         styles: {
-          color: 'rgba(255, 255, 255, 0.5)',
-          width: 1
+          lineColor: 'rgb(60,60,60)',
+          lineWidth: 1,
+          dotColor: '#fff',
+          dotWidth: 4,
+          panelBackground: 'rgb(60, 60, 60)',
+          panelColor: '#fff'
         }
-      },
-      hovered: {
-        enable: true,
-        styles: {
-          color: '#fff',
-          width: 4
-        },
-        animation: {
-          time: 300
-        },
-        array: []
       },
       grid: {
         enable: true,
@@ -105,12 +109,13 @@ export default class Chart {
           y: 5
         },
         styles: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: 'rgb(20, 20, 20)',
           width: 1
         }
       },
       timeLine: {
         enable: true,
+        resize: true,
         count: 5
       },
       valuesLine: {
@@ -145,12 +150,6 @@ export default class Chart {
       time
     });
   }
-  setState(options, callback) {
-    for (let option in options) {
-      this.state[option] = options[option];
-    }
-    callback && callback();
-  }
   clearCanvas() {
     let { canvas } = this.state,
       width = canvas.element.width;
@@ -167,17 +166,17 @@ export default class Chart {
     this.drawBackground();
     this.drawGrid();
     this.drawLine();
-    this.drawTimes();
+    this.drawTime();
     this.drawValues();
-    this.drawIndicator();
     this.drawTarget();
-    this.drawHoveredDot();
+    this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
   getDots(type) {
     let { data } = this.state,
       { array, limit, offset } = data,
       draw = [...array];
+    limit = limit.value;
     if (offset) {
       let rest = draw.length - offset,
         moreThenLimit = rest > limit;
@@ -253,7 +252,6 @@ export default class Chart {
       { styles, animation } = indicator,
       { context } = canvas;
     context.strokeStyle = 'transparent';
-
     context.save();
     if (!this.indicatorAnimatedState || this.indicatorAnimatedState >= 1)
       this.indicatorAnimatedState = 0;
@@ -305,7 +303,7 @@ export default class Chart {
       lineHeight
     };
   }
-  drawTimes() {
+  drawTime() {
     let draw = this.getDots('draw'),
       {
         lineStart,
@@ -315,7 +313,7 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      { canvas, timeLine, timeStamp } = this.state,
+      { canvas, timeLine, timeStamp, initialOffset } = this.state,
       { enable, count } = timeLine,
       { element, context } = canvas,
       dots = [...draw.dots],
@@ -339,11 +337,11 @@ export default class Chart {
       context.font = '100 12px sans-serif';
       context.fillStyle = '#fff';
       context.textAlign = 'center';
-      context.textBaseline = 'bottom';
+      context.textBaseline = 'middle';
       context.fillText(
         generateDate(dot && dot.time ? dot.time : timeStamp),
         dot ? dot.x : 0,
-        element.clientHeight - 12
+        element.clientHeight - (initialOffset.bottom / 2) + 2
       );
     }
   }
@@ -402,17 +400,16 @@ export default class Chart {
         y: lineBottom
       });
     }
-
     for (let i = 0; i <= valuesArray.length - 1; i++) {
       let value = valuesArray[i];
       context.font = '100 12px sans-serif';
       context.fillStyle = '#fff';
-      context.textAlign = 'right';
+      context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
         value.text.toFixed(digits),
-        element.clientWidth - 6,
-        value.y
+        element.clientWidth - offset.right / 2,
+        value.y + 2
       );
     }
   }
@@ -477,123 +474,93 @@ export default class Chart {
     }
   }
   drawTarget() {
-    let { canvas, offset, target, initialOffset } = this.state,
+    let { canvas, target, initialOffset, valuesLine } = this.state,
       { styles, coords } = target,
       { x, y } = coords,
-      { element, context } = canvas;
-    if (!target.enable || !x || !y) return;
-    context.lineWidth = styles.width;
-    context.strokeStyle = styles.color;
-    context.beginPath();
-    context.moveTo(0 + initialOffset.left, y);
-    context.lineTo(element.clientWidth - initialOffset.right, y);
-    context.stroke();
-    context.beginPath();
-    context.moveTo(x, 0 + initialOffset.top);
-    context.lineTo(x, element.clientHeight - initialOffset.bottom);
-    context.stroke();
-  }
-  drawHoveredDot() {
-    let { canvas, offset, target, initialOffset, hovered } = this.state,
+      { element, context } = canvas,
       draw = this.getDots('draw'),
       dots = [...draw.dots],
-      { coords } = target,
-      { x, y } = coords,
-      { element, context } = canvas,
-      { styles, array, enable, animation } = hovered,
-      filteredArray = [],
-      newArray = [],
-      animationStep = 1 / 60 / (animation.time / 1000),
-      current = false;
-    if (!enable) return;
+      currentDot = false;
+    if (!target.enable || !x || !y) return;
     for (let i = 0; i <= dots.length - 1; i++) {
       let dot = dots[i],
         dotNext = dots[i + 1];
       if (dotNext && x >= dot.x && x <= dotNext.x) {
-        current = (dotNext.x + dot.x) / 2 <= x ? dotNext : dot;
-      }
-      let item = array.find(item => {
-        return item.x === dot.x && item.y === dot.y && item.value === dot.value;
-      });
-      if (item) {
-        filteredArray.push(item);
+        currentDot = (dotNext.x + dot.x) / 2 <= x ? dotNext : dot;
       }
     }
-    array = filteredArray;
-    if (current) {
-      array = array.map(item => {
-        if (
-          current.x !== item.x &&
-          current.y !== item.y &&
-          current.value !== item.value
-        ) {
-          item.animation.new = false;
-        }
-        return item;
-      });
-    }
-    for (let i = 0; i <= array.length - 1; i++) {
-      let dot = array[i],
-        save = true;
-      if (dot.animation.new && dot.animation.state < 1) {
-        dot.animation.state += animationStep;
-      } else if (
-        dot.animation.new &&
-        dot.animation.state >= 1 &&
-        current.x !== dot.x
-      ) {
-        dot.animation.new = false;
-        dot.animation.state = 1;
-      } else if (!dot.animation.new) {
-        dot.animation.state -= animationStep;
-        if (dot.animation.state <= 0) {
-          save = false;
-        }
-      }
-      if (save) {
-        dot.animation.state = dot.animation.state > 1 ? 1 : dot.animation.state;
-        newArray.push(dot);
-      }
-    }
-    array = [...newArray];
 
-    if (current) {
-      let isIsset = array.find(item => {
-        return (
-          item.x === current.x &&
-          item.y === current.y &&
-          item.value === current.value
-        );
-      });
-      if (!isIsset)
-        current.animation = {
-          new: true,
-          state: 0
-        };
-      array.push(current);
-    }
-    for (let i = 0; i <= array.length - 1; i++) {
-      let current = array[i];
+    if (!currentDot) return;
+
+    //draw vertical line
+    context.lineWidth = styles.lineWidth;
+    context.strokeStyle = styles.lineColor;
+    context.beginPath();
+    context.moveTo(0 + initialOffset.left, currentDot.y);
+    context.lineTo(element.clientWidth - initialOffset.right, currentDot.y);
+    context.stroke();
+
+    //draw horizontal line
+    context.beginPath();
+    context.moveTo(currentDot.x, 0 + initialOffset.top);
+    context.lineTo(currentDot.x, element.clientHeight - initialOffset.bottom);
+    context.stroke();
+
+    //draw dot
+    context.beginPath();
+    context.strokeStyle = context.fillStyle = styles.dotColor;
+    context.arc(currentDot.x, currentDot.y, styles.dotWidth, 0, 2 * Math.PI);
+    context.fill();
+    context.stroke();
+
+    //draw panels
+    let panels = {
+      bottom: {
+        background: styles.panelBackground,
+        color: styles.panelColor,
+        width: 80,
+        height: initialOffset.bottom,
+        x: currentDot.x - 80 / 2,
+        y: element.clientHeight - initialOffset.bottom,
+        text: generateDate(currentDot.time)
+      },
+      right: {
+        background: styles.panelBackground,
+        color: styles.panelColor,
+        width: initialOffset.right,
+        height: 20,
+        x: element.clientWidth - initialOffset.right,
+        y: currentDot.y - 20 / 2,
+        text: currentDot.value.toFixed(valuesLine.digits || 2)
+      }
+    };
+
+    Object.values(panels).forEach(panel => {
+      context.strokeStyle = context.fillStyle = panel.background;
       context.beginPath();
-      context.arc(
-        current.x,
-        current.y,
-        styles.width * current.animation.state > 0
-          ? styles.width * current.animation.state
-          : 0,
-        0,
-        2 * Math.PI
+      context.rect(
+        panel.x,
+        panel.y,
+        panel.width,
+        panel.height
       );
-      context.fillStyle = styles.color;
       context.fill();
       context.stroke();
-    }
-    hovered.array = array;
+      context.font = '100 12px sans-serif';
+      context.fillStyle = panel.color;
+      context.textAlign = panel.textAlign;
+      context.textBaseline = 'center';
+      context.fillText(
+        panel.text,
+        panel.x + panel.width / 2,
+        panel.y + panel.height / 2 + 2
+      );
+    });
   }
   drawGrid() {
     let { canvas, grid, initialOffset } = this.state,
       { element, context } = canvas,
-      { enable, steps, styles } = grid;
+      { enable, steps, styles, type } = grid;
     if (!enable) return;
     context.lineWidth = styles.width;
     context.strokeStyle = styles.color;
@@ -615,7 +582,7 @@ export default class Chart {
     context.stroke();
     let xArray = [],
       yArray = [],
-      isPx = steps.type && steps.type === 'px',
+      isPx = type === 'px',
       xStep =
         (element.clientWidth - initialOffset.right - initialOffset.left) /
         steps.x,
@@ -693,6 +660,7 @@ export default class Chart {
 
     element.addEventListener('mousemove', e => {
       let { data, valuesLine, timeLine } = this.state,
+        { dots } = this.getDots('all'),
         elementOffset = element.getBoundingClientRect();
       targetClear();
       element.style.cursor = 'default';
@@ -784,6 +752,33 @@ export default class Chart {
               }
             })();
           }
+        }
+      }
+
+      // time panel
+      if (
+        timeLine.enable &&
+        timeLine.resize &&
+        e.clientX >= elementOffset.left + offset.left &&
+        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
+        e.clientY >= elementOffset.bottom - initialOffset.bottom
+      ) {
+        element.style.cursor = 'col-resize';
+        if (pushed) {
+          let nextLimit = data.limit.value + e.clientX - x;
+          data.limit.value = (() => {
+            if (data.limit.min && nextLimit < data.limit.min) {
+              return data.limit.min;
+            } else if (data.limit.max && nextLimit > data.limit.max) {
+              return data.limit.max;
+            } else if (dots.length < nextLimit) {
+              return dots.length;
+            } else if (nextLimit <= 2) {
+              return 2;
+            } else {
+              return nextLimit;
+            }
+          })();
         }
       }
 
