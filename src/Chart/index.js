@@ -1,4 +1,4 @@
-export const generateDate = time => {
+const generateDate = time => {
   let result = '';
   time = new Date(time);
   const getDay = day => {
@@ -29,22 +29,48 @@ export const generateDate = time => {
   return result;
 };
 
+const deepMerge = (obj1, obj2) => {
+  for (var p in obj2) {
+    try {
+      if (obj2[p].constructor == Object) {
+        obj1[p] = deepMerge(obj1[p], obj2[p]);
+      } else {
+        obj1[p] = obj2[p];
+      }
+    } catch (e) {
+      obj1[p] = obj2[p];
+    }
+  }
+  return obj1;
+}
+
 export default class Chart {
   constructor({
     canvas = false,
     data = [],
-    limit = 20,
-    maxLimit = false,
-    minLimit = false,
-    offset = 0
+    settings = {},
+    offset = {
+      left: 30,
+      right: 50,
+      top: 20,
+      bottom: 40
+    }
   }) {
-    this.state = {
-      canvas: {
-        element: canvas,
-        context: canvas.getContext('2d'),
-        isCanvas:
-          (canvas instanceof Element || canvas instanceof HTMLDocument) &&
-          canvas.tagName.toLowerCase() === 'canvas'
+    this.canvas = {
+      element: canvas,
+      context: canvas.getContext('2d'),
+      isCanvas:
+        (canvas instanceof Element || canvas instanceof HTMLDocument) &&
+        canvas.tagName.toLowerCase() === 'canvas'
+    };
+    this.data = data;
+
+    this.settings = {
+      data: {
+        offset: 0,
+        limit: {
+          value: 20
+        }
       },
       indicator: {
         styles: {
@@ -56,6 +82,7 @@ export default class Chart {
           scaleTo: 5
         }
       },
+      offset: { ...offset },
       line: {
         styles: {
           color: '#ffffff',
@@ -65,27 +92,13 @@ export default class Chart {
             to: '#000000',
             enable: false
           }
-        }
+        },
+        offset: { ...offset }
       },
       view: {
         styles: {
           background: '#000000'
         }
-      },
-      offset: {
-        left: 30,
-        right: 50,
-        top: 20,
-        bottom: 40
-      },
-      data: {
-        offset,
-        limit: {
-          value: limit,
-          max: maxLimit,
-          min: minLimit
-        },
-        array: data
       },
       target: {
         enable: true,
@@ -126,18 +139,39 @@ export default class Chart {
       },
       timeStamp: +new Date()
     };
-    this.state.initialOffset = { ...this.state.offset };
+    this.setSettings(settings);
     this.checkErrors();
     this.init();
   }
+  setSettings(newSettings = {}) {
+    if(newSettings.offset){
+      newSettings.line = {};
+      newSettings.line.offset = newSettings.offset;
+    }
+    deepMerge(this.settings, newSettings);
+  }
+  getSettings() {
+    return this.settings;
+  }
+  setData(data) {
+    this.data = data;
+  }
+  getData() {
+    return this.data;
+  }
+  getLast() {
+    let last = this.getDots('last');
+    return last;
+  }
   checkErrors() {
-    let { canvas } = this.state;
+    let { canvas } = this;
     if (!canvas.isCanvas)
       throw new Error(canvas.element + ' is not a canvas element');
   }
   newDot({ value = false, time = false } = {}) {
     let { dots } = this.getDots('all'),
-      { data } = this.state,
+      { settings } = this,
+      { data } = settings,
       lastDot = dots[dots.length - 1],
       prevValue = lastDot ? lastDot.value : 0,
       randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
@@ -151,7 +185,7 @@ export default class Chart {
     });
   }
   clearCanvas() {
-    let { canvas } = this.state,
+    let { canvas } = this,
       width = canvas.element.width;
     canvas.context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.element.width = 1;
@@ -173,27 +207,27 @@ export default class Chart {
     requestAnimationFrame(this.render.bind(this));
   }
   getDots(type) {
-    let { data } = this.state,
-      { array, limit, offset } = data,
-      draw = [...array];
-    limit = limit.value;
-    if (offset) {
-      let rest = draw.length - offset,
-        moreThenLimit = rest > limit;
+    let { settings } = this,
+      { data } = settings,
+      all = this.data,
+      draw = [...this.data];
+    if (data.offset) {
+      let rest = draw.length - data.offset,
+        moreThenLimit = rest > data.limit.value;
       if (!moreThenLimit) {
-        data.offset = draw.length - limit;
+        data.offset = draw.length - data.limit.value;
       }
-      draw = draw.slice(0, moreThenLimit ? rest : limit);
+      draw = draw.slice(0, moreThenLimit ? rest : data.limit.value);
     }
-    if (draw.length > limit) {
-      draw = draw.slice(draw.length - limit, draw.length);
+    if (draw.length > data.limit.value) {
+      draw = draw.slice(draw.length - data.limit.value, draw.length);
     }
     let drawMax = draw.length ? draw[0].value : 0,
       drawMin = draw.length ? draw[0].value : 0,
-      max = array.length ? array[0].value : 0,
-      min = array.length ? array[0].value : 0;
-    for (let i = 0; i <= array.length - 1; i++) {
-      let { value } = array[i];
+      max = data.length ? data[0].value : 0,
+      min = data.length ? data[0].value : 0;
+    for (let i = 0; i <= all.length - 1; i++) {
+      let { value } = all[i];
       if (value > max) max = value;
       if (value < min) min = value;
     }
@@ -204,7 +238,7 @@ export default class Chart {
     }
     let result = {
       all: {
-        dots: array,
+        dots: all,
         max,
         min
       },
@@ -213,13 +247,15 @@ export default class Chart {
         max: drawMax,
         min: drawMin
       },
-      last: array[array.length - 1],
-      first: array[0]
+      last: all[all.length - 1],
+      first: all[0]
     };
     return type && result[type] ? result[type] : result;
   }
   getIndicatorCoords() {
-    let { canvas, indicator, offset } = this.state,
+    let { canvas, settings } = this,
+      { indicator, line } = settings,
+      { offset } = line,
       y,
       { element } = canvas,
       { styles, animation } = indicator,
@@ -248,7 +284,8 @@ export default class Chart {
   }
   drawIndicator() {
     let { x, y } = this.getIndicatorCoords(),
-      { indicator, canvas } = this.state,
+      { settings, canvas } = this,
+      { indicator } = settings,
       { styles, animation } = indicator,
       { context } = canvas;
     context.strokeStyle = 'transparent';
@@ -277,7 +314,8 @@ export default class Chart {
     context.stroke();
   }
   drawBackground() {
-    let { canvas, view } = this.state,
+    let { canvas, settings } = this,
+      { view } = settings,
       { context, element } = canvas,
       { background } = view.styles;
     element.width = element.clientWidth;
@@ -286,7 +324,9 @@ export default class Chart {
     context.fillRect(0, 0, element.width, element.height);
   }
   getLineDrawCoords() {
-    let { canvas, offset } = this.state,
+    let { canvas, settings } = this,
+      { line } = settings,
+      { offset } = line,
       { element } = canvas,
       lineStart = element.clientWidth - offset.right,
       lineEnd = offset.left,
@@ -313,7 +353,8 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      { canvas, timeLine, timeStamp, initialOffset } = this.state,
+      { canvas, settings } = this,
+      { timeLine, timeStamp, offset } = settings,
       { enable, count } = timeLine,
       { element, context } = canvas,
       dots = [...draw.dots],
@@ -341,7 +382,7 @@ export default class Chart {
       context.fillText(
         generateDate(dot && dot.time ? dot.time : timeStamp),
         dot ? dot.x : 0,
-        element.clientHeight - (initialOffset.bottom / 2) + 2
+        element.clientHeight - offset.bottom / 2 + 2
       );
     }
   }
@@ -355,7 +396,8 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      { canvas, valuesLine, offset } = this.state,
+      { canvas, settings } = this,
+      { valuesLine, offset } = settings,
       { count, enable, digits } = valuesLine,
       { element, context } = canvas,
       valuesArray = [];
@@ -414,7 +456,8 @@ export default class Chart {
     }
   }
   drawLine() {
-    let { canvas, line, view } = this.state,
+    let { canvas, settings } = this,
+      { line, view } = settings,
       { gradient, color, width } = line.styles,
       { background } = view.styles,
       { context, element } = canvas,
@@ -474,7 +517,8 @@ export default class Chart {
     }
   }
   drawTarget() {
-    let { canvas, target, initialOffset, valuesLine } = this.state,
+    let { canvas, settings } = this,
+      { target, offset, valuesLine, timeStamp } = settings,
       { styles, coords } = target,
       { x, y } = coords,
       { element, context } = canvas,
@@ -496,14 +540,14 @@ export default class Chart {
     context.lineWidth = styles.lineWidth;
     context.strokeStyle = styles.lineColor;
     context.beginPath();
-    context.moveTo(0 + initialOffset.left, currentDot.y);
-    context.lineTo(element.clientWidth - initialOffset.right, currentDot.y);
+    context.moveTo(0 + offset.left, currentDot.y);
+    context.lineTo(element.clientWidth - offset.right, currentDot.y);
     context.stroke();
 
     //draw horizontal line
     context.beginPath();
-    context.moveTo(currentDot.x, 0 + initialOffset.top);
-    context.lineTo(currentDot.x, element.clientHeight - initialOffset.bottom);
+    context.moveTo(currentDot.x, 0 + offset.top);
+    context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
     context.stroke();
 
     //draw dot
@@ -519,17 +563,17 @@ export default class Chart {
         background: styles.panelBackground,
         color: styles.panelColor,
         width: 80,
-        height: initialOffset.bottom,
+        height: offset.bottom,
         x: currentDot.x - 80 / 2,
-        y: element.clientHeight - initialOffset.bottom,
-        text: generateDate(currentDot.time)
+        y: element.clientHeight - offset.bottom,
+        text: generateDate(currentDot && currentDot.time ? currentDot.time : timeStamp)
       },
       right: {
         background: styles.panelBackground,
         color: styles.panelColor,
-        width: initialOffset.right,
+        width: offset.right,
         height: 20,
-        x: element.clientWidth - initialOffset.right,
+        x: element.clientWidth - offset.right,
         y: currentDot.y - 20 / 2,
         text: currentDot.value.toFixed(valuesLine.digits || 2)
       }
@@ -538,12 +582,7 @@ export default class Chart {
     Object.values(panels).forEach(panel => {
       context.strokeStyle = context.fillStyle = panel.background;
       context.beginPath();
-      context.rect(
-        panel.x,
-        panel.y,
-        panel.width,
-        panel.height
-      );
+      context.rect(panel.x, panel.y, panel.width, panel.height);
       context.fill();
       context.stroke();
       context.font = '100 12px sans-serif';
@@ -558,39 +597,30 @@ export default class Chart {
     });
   }
   drawGrid() {
-    let { canvas, grid, initialOffset } = this.state,
+    let { canvas, settings } = this,
+      { grid, offset } = settings,
       { element, context } = canvas,
       { enable, steps, styles, type } = grid;
     if (!enable) return;
     context.lineWidth = styles.width;
     context.strokeStyle = styles.color;
     context.beginPath();
-    context.lineTo(0 + initialOffset.left, 0 + initialOffset.top);
+    context.lineTo(0 + offset.left, 0 + offset.top);
+    context.lineTo(element.clientWidth - offset.right, 0 + offset.top);
     context.lineTo(
-      element.clientWidth - initialOffset.right,
-      0 + initialOffset.top
+      element.clientWidth - offset.right,
+      element.clientHeight - offset.bottom
     );
-    context.lineTo(
-      element.clientWidth - initialOffset.right,
-      element.clientHeight - initialOffset.bottom
-    );
-    context.lineTo(
-      0 + initialOffset.left,
-      element.clientHeight - initialOffset.bottom
-    );
-    context.lineTo(0 + initialOffset.left, 0 + initialOffset.top);
+    context.lineTo(0 + offset.left, element.clientHeight - offset.bottom);
+    context.lineTo(0 + offset.left, 0 + offset.top);
     context.stroke();
     let xArray = [],
       yArray = [],
       isPx = type === 'px',
-      xStep =
-        (element.clientWidth - initialOffset.right - initialOffset.left) /
-        steps.x,
-      xStart = 0 + initialOffset.left,
-      yStep =
-        (element.clientHeight - initialOffset.top - initialOffset.bottom) /
-        steps.y,
-      yStart = 0 + initialOffset.top;
+      xStep = (element.clientWidth - offset.right - offset.left) / steps.x,
+      xStart = 0 + offset.left,
+      yStep = (element.clientHeight - offset.top - offset.bottom) / steps.y,
+      yStart = 0 + offset.top;
     if (isPx) {
       for (let i = 1; i < xStep; i++) {
         let x = xStart + i * steps.x;
@@ -612,19 +642,20 @@ export default class Chart {
     }
     for (let i = 0; i <= xArray.length - 1; i++) {
       context.beginPath();
-      context.lineTo(xArray[i], 0 + initialOffset.top);
-      context.lineTo(xArray[i], element.clientHeight - initialOffset.bottom);
+      context.lineTo(xArray[i], 0 + offset.top);
+      context.lineTo(xArray[i], element.clientHeight - offset.bottom);
       context.stroke();
     }
     for (let i = 0; i <= yArray.length - 1; i++) {
       context.beginPath();
-      context.lineTo(0 + initialOffset.left, yArray[i]);
-      context.lineTo(element.clientWidth - initialOffset.right, yArray[i]);
+      context.lineTo(0 + offset.left, yArray[i]);
+      context.lineTo(element.clientWidth - offset.right, yArray[i]);
       context.stroke();
     }
   }
   listeners() {
-    let { canvas, offset, limit, target, initialOffset } = this.state,
+    let { canvas, settings } = this,
+      { target } = settings,
       { element } = canvas,
       pushed = false,
       x = 0,
@@ -659,19 +690,18 @@ export default class Chart {
     });
 
     element.addEventListener('mousemove', e => {
-      let { data, valuesLine, timeLine } = this.state,
+      let { settings } = this,
+        { valuesLine, timeLine, data, line, offset } = settings,
         { dots } = this.getDots('all'),
         elementOffset = element.getBoundingClientRect();
       targetClear();
       element.style.cursor = 'default';
-
       //target point
       if (
-        e.clientX >= elementOffset.left + initialOffset.left + 1 &&
-        e.clientX <=
-          elementOffset.left + elementOffset.width - initialOffset.right &&
-        e.clientY >= elementOffset.top + initialOffset.top &&
-        e.clientY <= elementOffset.bottom - initialOffset.bottom
+        e.clientX >= elementOffset.left + offset.left + 1 &&
+        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
+        e.clientY >= elementOffset.top + offset.top &&
+        e.clientY <= elementOffset.bottom - offset.bottom
       ) {
         if (target.enable) {
           element.style.cursor = 'crosshair';
@@ -684,14 +714,18 @@ export default class Chart {
 
       //line view
       if (
-        e.clientX >= elementOffset.left + offset.left &&
-        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
-        e.clientY >= elementOffset.top + initialOffset.top &&
-        e.clientY <= elementOffset.bottom - initialOffset.bottom
+        e.clientX >= elementOffset.left + line.offset.left &&
+        e.clientX <=
+          elementOffset.left + elementOffset.width - line.offset.right &&
+        e.clientY >= elementOffset.top + offset.top &&
+        e.clientY <= elementOffset.bottom - offset.bottom
       ) {
         if (pushed) {
           let nextOffset = data.offset + e.clientX - x;
-          data.offset = nextOffset < 0 ? 0 : nextOffset;
+          if (nextOffset < 0) nextOffset = 0;
+          if (nextOffset > dots.length - data.limit.value)
+            nextOffset = dots.length - data.limit.value;
+          data.offset = nextOffset;
         }
       }
 
@@ -710,45 +744,39 @@ export default class Chart {
           if (zoomIn) {
             let maxOffset = 60,
               maxTop =
-                (elementOffset.height +
-                  initialOffset.top -
-                  initialOffset.bottom) /
-                  2 -
+                (elementOffset.height + offset.top - offset.bottom) / 2 -
                 maxOffset,
               maxBottom =
-                (elementOffset.height +
-                  initialOffset.bottom -
-                  initialOffset.top) /
-                  2 -
+                (elementOffset.height + offset.bottom - offset.top) / 2 -
                 maxOffset;
-            offset.top = (() => {
-              if (offset.top - nextTop < maxTop) {
-                return offset.top - nextTop;
+            line.offset.top = (() => {
+              if (line.offset.top - nextTop < maxTop) {
+                return line.offset.top - nextTop;
               } else {
                 return maxTop;
               }
             })();
-            offset.bottom = (() => {
-              if (offset.bottom + nextBottom < maxBottom) {
-                return offset.bottom + nextBottom;
+            line.offset.bottom = (() => {
+              if (line.offset.bottom + nextBottom < maxBottom) {
+                return line.offset.bottom + nextBottom;
               } else {
                 return maxBottom;
               }
             })();
           }
           if (zoomOut) {
-            offset.top = (() => {
-              if (offset.top - nextTop > initialOffset.top) {
-                return offset.top - nextTop;
+            line.offset.top = (() => {
+              if (line.offset.top - nextTop > offset.top) {
+                return line.offset.top - nextTop;
               } else {
-                return initialOffset.top;
+                return offset.top;
               }
             })();
-            offset.bottom = (() => {
-              if (offset.bottom + nextBottom > initialOffset.bottom) {
-                return offset.bottom + nextBottom;
+            line.offset.bottom = (() => {
+              if (line.offset.bottom + nextBottom > offset.bottom) {
+                return line.offset.bottom + nextBottom;
               } else {
-                return initialOffset.bottom;
+                return offset.bottom;
               }
             })();
           }
@@ -759,9 +787,10 @@ export default class Chart {
       if (
         timeLine.enable &&
         timeLine.resize &&
-        e.clientX >= elementOffset.left + offset.left &&
-        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
-        e.clientY >= elementOffset.bottom - initialOffset.bottom
+        e.clientX >= elementOffset.left + line.offset.left &&
+        e.clientX <=
+          elementOffset.left + elementOffset.width - line.offset.right &&
+        e.clientY >= elementOffset.bottom - offset.bottom
       ) {
         element.style.cursor = 'col-resize';
         if (pushed) {
@@ -781,7 +810,6 @@ export default class Chart {
           })();
         }
       }
-
       if (pushed) {
         x = e.clientX;
         y = e.clientY;

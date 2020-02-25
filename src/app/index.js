@@ -6,11 +6,8 @@ const request = new Request(),
 window.addEventListener('load', () => {
   let canvas = document.querySelectorAll('canvas');
   canvas.forEach(item => {
-    console.log(item);
     let chart = new Chart({
-        canvas: item,
-        limit: 50,
-        offset: 0
+        canvas: item
       }),
       symbol = url.getParam('symbol');
     setInterval(() => {
@@ -31,6 +28,6 @@ window.addEventListener('load', () => {
       } else {
         chart.newDot();
       }
-    }, 500);
+    }, 100);
   });
 });
