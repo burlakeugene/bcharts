@@ -43,17 +43,6 @@ const deepMerge = (obj1, obj2) => {
   }
   return obj1;
 };
-
-const retinaFix = (canvas) => {
-  let dpr = window.devicePixelRatio || 1,
-    rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  let context = canvas.getContext('2d');
-  context.scale(dpr, dpr);
-  return context;
-}
-
 export default class Chart {
   constructor({
     canvas = false,
@@ -68,14 +57,12 @@ export default class Chart {
   }) {
     this.canvas = {
       element: canvas,
-      context: retinaFix(canvas),
+      context: canvas.getContext('2d'),
       isCanvas:
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
         canvas.tagName.toLowerCase() === 'canvas'
     };
-    this.canvas.context.scale(2, 2);
     this.data = data;
-
     this.settings = {
       data: {
         offset: 0,
@@ -151,7 +138,6 @@ export default class Chart {
       timeStamp: +new Date()
     };
     this.setSettings(settings);
-    this.checkErrors();
     this.init();
   }
   setSettings(newSettings = {}) {
@@ -173,11 +159,6 @@ export default class Chart {
   getLast() {
     let last = this.getDots('last');
     return last;
-  }
-  checkErrors() {
-    let { canvas } = this;
-    if (!canvas.isCanvas)
-      throw new Error(canvas.element + ' is not a canvas element');
   }
   newDot({ value = false, time = false } = {}) {
     let { dots } = this.getDots('all'),
@@ -320,9 +301,11 @@ export default class Chart {
     let { canvas, settings } = this,
       { view } = settings,
       { context, element } = canvas,
-      { background } = view.styles;
-    element.width = element.clientWidth;
-    element.height = element.clientHeight;
+      { background } = view.styles,
+      ratio = window.devicePixelRatio || 1;
+    element.width = element.clientWidth * ratio;
+    element.height = element.clientHeight * ratio;
+    context.scale(ratio, ratio);
     context.fillStyle = background;
     context.fillRect(0, 0, element.width, element.height);
   }

@@ -7,7 +7,14 @@ window.addEventListener('load', () => {
   let canvas = document.querySelectorAll('canvas');
   canvas.forEach(item => {
     let chart = new Chart({
-        canvas: item
+        canvas: item,
+        settings: {
+          data: {
+            limit: {
+              value: 100
+            }
+          }
+        }
       }),
       symbol = url.getParam('symbol');
     setInterval(() => {
