@@ -42,6 +42,16 @@ const deepMerge = (obj1, obj2) => {
     }
   }
   return obj1;
+};
+
+const retinaFix = (canvas) => {
+  let dpr = window.devicePixelRatio || 1,
+    rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  let context = canvas.getContext('2d');
+  context.scale(dpr, dpr);
+  return context;
 }
 
 export default class Chart {
@@ -58,11 +68,12 @@ export default class Chart {
   }) {
     this.canvas = {
       element: canvas,
-      context: canvas.getContext('2d'),
+      context: retinaFix(canvas),
       isCanvas:
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
         canvas.tagName.toLowerCase() === 'canvas'
     };
+    this.canvas.context.scale(2, 2);
     this.data = data;
 
     this.settings = {
@@ -144,7 +155,7 @@ export default class Chart {
     this.init();
   }
   setSettings(newSettings = {}) {
-    if(newSettings.offset){
+    if (newSettings.offset) {
       newSettings.line = {};
       newSettings.line.offset = newSettings.offset;
     }
@@ -184,19 +195,11 @@ export default class Chart {
       time
     });
   }
-  clearCanvas() {
-    let { canvas } = this,
-      width = canvas.element.width;
-    canvas.context.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.element.width = 1;
-    canvas.element.width = width;
-  }
   init() {
     this.listeners();
     this.render();
   }
   render() {
-    this.clearCanvas();
     this.drawBackground();
     this.drawGrid();
     this.drawLine();
@@ -566,7 +569,9 @@ export default class Chart {
         height: offset.bottom,
         x: currentDot.x - 80 / 2,
         y: element.clientHeight - offset.bottom,
-        text: generateDate(currentDot && currentDot.time ? currentDot.time : timeStamp)
+        text: generateDate(
+          currentDot && currentDot.time ? currentDot.time : timeStamp
+        )
       },
       right: {
         background: styles.panelBackground,
