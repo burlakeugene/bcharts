@@ -77,6 +77,7 @@ export default class Chart {
         }
       },
       indicator: {
+        enable: true,
         styles: {
           color: '#27ca5d',
           width: 2
@@ -90,18 +91,23 @@ export default class Chart {
       line: {
         styles: {
           color: '#ffffff',
-          width: 1,
-          gradient: {
-            from: '#ffffff',
-            to: '#000000',
-            enable: false
+          width: 5,
+          lineGradient: {
+            from: '#954ce9',
+            to: '#24c1ed',
+            enable: true
+          },
+          backgroundGradient: {
+            from: 'rgba(149, 76, 233, 0.17)',
+            to: 'rgba(149, 76, 233, 0)',
+            enable: true
           }
         },
         offset: { ...offset }
       },
       view: {
         styles: {
-          background: '#000000'
+          background: '#1e2730'
         }
       },
       target: {
@@ -111,11 +117,11 @@ export default class Chart {
           y: 0
         },
         styles: {
-          lineColor: 'rgb(60,60,60)',
+          lineColor: '#4a667a',
           lineWidth: 1,
           dotColor: '#fff',
           dotWidth: 4,
-          panelBackground: 'rgb(60, 60, 60)',
+          panelBackground: '#4a667a',
           panelColor: '#fff'
         }
       },
@@ -126,7 +132,7 @@ export default class Chart {
           y: 5
         },
         styles: {
-          color: 'rgb(20, 20, 20)',
+          color: '#4a667a',
           width: 1
         }
       },
@@ -226,6 +232,7 @@ export default class Chart {
       if (value > drawMax) drawMax = value;
       if (value < drawMin) drawMin = value;
     }
+    draw = this.calcDotsCoords(draw, drawMin, drawMax);
     let result = {
       all: {
         dots: all,
@@ -242,11 +249,35 @@ export default class Chart {
     };
     return type && result[type] ? result[type] : result;
   }
+  calcDotsCoords(dots, min, max) {
+    let {
+        lineStart,
+        lineEnd,
+        lineView,
+        lineTop,
+        lineBottom,
+        lineHeight
+      } = this.getLineDrawCoords(),
+      lineLastDot = lineStart,
+      dotsLength = dots.length - 1;
+    for (let i = dotsLength; i >= 0; i--) {
+      let dot = dots[i],
+        value = dot.value,
+        partWidth = lineView / dotsLength;
+      dot.x = lineLastDot;
+      dot.y =
+        lineTop +
+        lineHeight -
+        lineHeight * (((value - min) * 100) / (max - min) / 100);
+      if (!dot.y) dot.y = lineHeight / 2 + lineTop;
+      lineLastDot -= partWidth;
+    }
+    return dots;
+  }
   getIndicatorCoords() {
     let { canvas, settings } = this,
       { indicator, line } = settings,
       { offset } = line,
-      y,
       { element } = canvas,
       { styles, animation } = indicator,
       { draw, last } = this.getDots(),
@@ -256,7 +287,9 @@ export default class Chart {
         lineTop,
         lineBottom,
         lineHeight
-      } = this.getLineDrawCoords();
+      } = this.getLineDrawCoords(),
+      y,
+      x = element.clientWidth - (offset.right || 0);
     if (last) {
       y =
         lineTop +
@@ -268,7 +301,7 @@ export default class Chart {
       if (y < lineTop) y = lineTop;
     }
     return {
-      x: element.clientWidth - (offset.right || 0),
+      x,
       y
     };
   }
@@ -276,8 +309,9 @@ export default class Chart {
     let { x, y } = this.getIndicatorCoords(),
       { settings, canvas } = this,
       { indicator } = settings,
-      { styles, animation } = indicator,
+      { styles, animation, enable } = indicator,
       { context } = canvas;
+    if (!enable) return;
     context.strokeStyle = 'transparent';
     context.save();
     if (!this.indicatorAnimatedState || this.indicatorAnimatedState >= 1)
@@ -317,14 +351,14 @@ export default class Chart {
   }
   getLineDrawCoords() {
     let { canvas, settings } = this,
-      { line } = settings,
+      { line, grid } = settings,
       { offset } = line,
       { element } = canvas,
       lineStart = element.clientWidth - offset.right,
       lineEnd = offset.left,
       lineView = lineStart - lineEnd,
-      lineTop = offset.top,
-      lineBottom = element.clientHeight - offset.bottom,
+      lineTop = offset.top + line.styles.width,
+      lineBottom = element.clientHeight - offset.bottom - line.styles.width,
       lineHeight = lineBottom - lineTop;
     return {
       lineStart,
@@ -449,62 +483,78 @@ export default class Chart {
   }
   drawLine() {
     let { canvas, settings } = this,
-      { line, view } = settings,
-      { gradient, color, width } = line.styles,
-      { background } = view.styles,
+      { line, grid, offset, view } = settings,
+      { backgroundGradient, lineGradient, color, width } = line.styles,
       { context, element } = canvas,
-      {
-        lineStart,
-        lineEnd,
-        lineView,
-        lineTop,
-        lineBottom,
-        lineHeight
-      } = this.getLineDrawCoords(),
+      { lineStart, lineEnd, lineTop, lineBottom } = this.getLineDrawCoords(),
       draw = this.getDots('draw'),
-      { dots, min, max } = draw,
-      lineLastDot = lineStart,
-      dotsLength = dots.length - 1;
-    for (let i = dotsLength; i >= 0; i--) {
-      let dot = dots[i],
-        value = dot.value,
-        partWidth = lineView / dotsLength;
-      dot.x = lineLastDot;
-      dot.y =
-        lineTop +
-        lineHeight -
-        lineHeight * (((value - min) * 100) / (max - min) / 100);
-      if (!dot.y) dot.y = lineHeight / 2 + lineTop;
-      lineLastDot -= partWidth;
-    }
+      { dots, min, max } = draw;
     context.beginPath();
     context.lineWidth = width;
     context.strokeStyle = color;
     context.lineJoin = 'round';
-    if (gradient.enable) {
-      let fill = context.createLinearGradient(0, lineTop, 0, lineHeight);
-      fill.addColorStop(0, gradient.from);
-      fill.addColorStop(1, gradient.to);
-      context.fillStyle = fill;
-      context.lineTo(lineStart, lineHeight);
+    if (lineGradient.enable) {
+      let fill = context.createLinearGradient(lineEnd, 0, lineStart, 0);
+      fill.addColorStop(0, lineGradient.from);
+      fill.addColorStop(1, lineGradient.to);
+      context.strokeStyle = fill;
     }
-    for (let i = dotsLength; i >= 0; i--) {
+    for (let i = dots.length - 1; i >= 0; i--) {
       let dot = dots[i];
       context.lineTo(dot.x, dot.y);
     }
-    if (gradient.enable) {
+    context.stroke();
+    if (backgroundGradient.enable && dots.length > 1) {
+      context.beginPath();
+      context.lineWidth = 0;
+      context.strokeStyle = 'transparent';
+      if (lineGradient.enable) {
+        let fill = context.createLinearGradient(0, lineTop, 0, lineBottom);
+        fill.addColorStop(0, backgroundGradient.from);
+        fill.addColorStop(1, backgroundGradient.to);
+        context.fillStyle = fill;
+      }
+      context.lineTo(lineStart, lineBottom);
+      for (let i = dots.length - 1; i >= 0; i--) {
+        let dot = dots[i];
+        context.lineTo(dot.x, dot.y);
+      }
       context.lineTo(lineEnd, lineBottom);
       context.fill();
+      context.stroke();
     }
-    context.stroke();
-    if (gradient.enable) {
+    if (grid.enable) {
       context.beginPath();
-      context.lineWidth = width + 1;
-      context.strokeStyle = background;
-      context.lineTo(lineEnd, 0);
-      context.lineTo(lineEnd, element.clientHeight);
-      context.lineTo(lineStart, element.clientHeight);
-      context.lineTo(lineStart, 0);
+      context.lineJoin = 'miter';
+      context.lineWidth = width;
+      context.strokeStyle = view.styles.background;
+      context.lineTo(0 + offset.left - width / 2, 0 + offset.top - width / 2);
+      context.lineTo(
+        0 + offset.left - width / 2,
+        element.clientHeight - offset.bottom + width / 2
+      );
+      context.lineTo(
+        element.clientWidth - offset.right + width / 2,
+        element.clientHeight - offset.bottom + width / 2
+      );
+      context.lineTo(
+        element.clientWidth - offset.right + width / 2,
+        0 + offset.top - width / 2
+      );
+      context.closePath();
+      context.stroke();
+      context.beginPath();
+      context.lineJoin = 'miter';
+      context.lineWidth = grid.styles.width;
+      context.strokeStyle = grid.styles.color;
+      context.lineTo(0 + offset.left, 0 + offset.top);
+      context.lineTo(0 + offset.left, element.clientHeight - offset.bottom);
+      context.lineTo(
+        element.clientWidth - offset.right,
+        element.clientHeight - offset.bottom
+      );
+      context.lineTo(element.clientWidth - offset.right, 0 + offset.top);
+      context.closePath();
       context.stroke();
     }
   }
@@ -607,6 +657,7 @@ export default class Chart {
     );
     context.lineTo(0 + offset.left, element.clientHeight - offset.bottom);
     context.lineTo(0 + offset.left, 0 + offset.top);
+    context.closePath();
     context.stroke();
     let xArray = [],
       yArray = [],

@@ -35,6 +35,6 @@ window.addEventListener('load', () => {
       } else {
         chart.newDot();
       }
-    }, 100);
+    }, 1000);
   });
 });
