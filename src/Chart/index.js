@@ -73,25 +73,25 @@ export default class Chart {
       data: {
         offset: 0,
         limit: {
-          value: 20
+          value: 100
         }
       },
+      offset: { ...offset },
       indicator: {
         enable: true,
         styles: {
           color: '#27ca5d',
-          width: 2
+          width: 3
         },
         animation: {
           time: 1000,
           scaleTo: 5
         }
       },
-      offset: { ...offset },
       line: {
         styles: {
           color: '#ffffff',
-          width: 5,
+          width: 2,
           lineGradient: {
             from: '#954ce9',
             to: '#24c1ed',
@@ -107,7 +107,7 @@ export default class Chart {
       },
       view: {
         styles: {
-          background: '#1e2730'
+          background: '#1a1e30'
         }
       },
       target: {
@@ -117,12 +117,24 @@ export default class Chart {
           y: 0
         },
         styles: {
-          lineColor: '#4a667a',
-          lineWidth: 1,
-          dotColor: '#fff',
-          dotWidth: 4,
-          panelBackground: '#4a667a',
-          panelColor: '#fff'
+          line: {
+            color: '#6f7dab',
+            width: 1
+          },
+          panel: {
+            background: '#6f7dab',
+            color: '#fff'
+          },
+          dots: [{
+            width: 10,
+            background: 'transparent',
+            strokeColor: '#6f7dab',
+            strokeWidth: 1
+          }, {
+            width: 4,
+            background: '#24c1ed',
+            strokeColor: 'transparent'
+          }]
         }
       },
       grid: {
@@ -132,20 +144,27 @@ export default class Chart {
           y: 5
         },
         styles: {
-          color: '#4a667a',
+          background: '',
+          color: '#2b2a49',
           width: 1
         }
       },
       timeLine: {
         enable: true,
         resize: true,
-        count: 5
+        count: 5,
+        styles: {
+          color: '#6f7dab'
+        }
       },
       valuesLine: {
         enable: true,
         resize: true,
         count: 10,
-        digits: 2
+        digits: 2,
+        styles: {
+          color: '#6f7dab'
+        }
       },
       timeStamp: +new Date()
     };
@@ -381,7 +400,7 @@ export default class Chart {
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
       { timeLine, timeStamp, offset } = settings,
-      { enable, count } = timeLine,
+      { enable, count, styles } = timeLine,
       { element, context } = canvas,
       dots = [...draw.dots],
       timesArray = [];
@@ -401,14 +420,14 @@ export default class Chart {
     }
     for (let i = 0; i <= timesArray.length - 1; i++) {
       let dot = timesArray[i];
-      context.font = '100 12px sans-serif';
-      context.fillStyle = '#fff';
+      context.font = '100 12px arial';
+      context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
         generateDate(dot && dot.time ? dot.time : timeStamp),
         dot ? dot.x : 0,
-        element.clientHeight - offset.bottom / 2 + 2
+        element.clientHeight - offset.bottom / 2
       );
     }
   }
@@ -424,7 +443,7 @@ export default class Chart {
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
       { valuesLine, offset } = settings,
-      { count, enable, digits } = valuesLine,
+      { count, enable, digits, styles } = valuesLine,
       { element, context } = canvas,
       valuesArray = [];
     if (!enable) return;
@@ -470,14 +489,14 @@ export default class Chart {
     }
     for (let i = 0; i <= valuesArray.length - 1; i++) {
       let value = valuesArray[i];
-      context.font = '100 12px sans-serif';
-      context.fillStyle = '#fff';
+      context.font = '100 12px arial';
+      context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
         value.text.toFixed(digits),
         element.clientWidth - offset.right / 2,
-        value.y + 2
+        value.y
       );
     }
   }
@@ -577,33 +596,46 @@ export default class Chart {
     }
 
     if (!currentDot) return;
+    let maxDotWidth = 0;
+    //draw dot
+    styles.dots.forEach((dot) => {
+      context.beginPath();
+      context.strokeStyle = dot.strokeColor;
+      context.lineWidth = dot.strokeWidth;
+      context.fillStyle = dot.background;
+      context.arc(currentDot.x, currentDot.y, dot.width, 0, 2 * Math.PI);
+      context.fill();
+      context.stroke();
+      if(dot.width && dot.width > maxDotWidth) maxDotWidth = dot.width;
+    })
 
-    //draw vertical line
-    context.lineWidth = styles.lineWidth;
-    context.strokeStyle = styles.lineColor;
+    //draw horizontal line
+    context.lineWidth = styles.line.width;
+    context.strokeStyle = styles.line.color;
     context.beginPath();
     context.moveTo(0 + offset.left, currentDot.y);
+    context.lineTo(currentDot.x - maxDotWidth, currentDot.y);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(currentDot.x + maxDotWidth, currentDot.y);
     context.lineTo(element.clientWidth - offset.right, currentDot.y);
     context.stroke();
 
-    //draw horizontal line
+    //draw vertical line
     context.beginPath();
     context.moveTo(currentDot.x, 0 + offset.top);
-    context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
+    context.lineTo(currentDot.x, currentDot.y - maxDotWidth);
     context.stroke();
-
-    //draw dot
     context.beginPath();
-    context.strokeStyle = context.fillStyle = styles.dotColor;
-    context.arc(currentDot.x, currentDot.y, styles.dotWidth, 0, 2 * Math.PI);
-    context.fill();
+    context.moveTo(currentDot.x, currentDot.y + maxDotWidth);
+    context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
     context.stroke();
 
     //draw panels
     let panels = {
       bottom: {
-        background: styles.panelBackground,
-        color: styles.panelColor,
+        background: styles.panel.background,
+        color: styles.panel.color,
         width: 80,
         height: offset.bottom,
         x: currentDot.x - 80 / 2,
@@ -613,8 +645,8 @@ export default class Chart {
         )
       },
       right: {
-        background: styles.panelBackground,
-        color: styles.panelColor,
+        background: styles.panel.background,
+        color: styles.panel.color,
         width: offset.right,
         height: 20,
         x: element.clientWidth - offset.right,
@@ -629,14 +661,14 @@ export default class Chart {
       context.rect(panel.x, panel.y, panel.width, panel.height);
       context.fill();
       context.stroke();
-      context.font = '100 12px sans-serif';
+      context.font = '100 12px arial';
       context.fillStyle = panel.color;
       context.textAlign = panel.textAlign;
-      context.textBaseline = 'center';
+      context.textBaseline = 'middle';
       context.fillText(
         panel.text,
         panel.x + panel.width / 2,
-        panel.y + panel.height / 2 + 2
+        panel.y + panel.height / 2
       );
     });
   }
@@ -646,19 +678,16 @@ export default class Chart {
       { element, context } = canvas,
       { enable, steps, styles, type } = grid;
     if (!enable) return;
+    let left = 0 + offset.left,
+      right = element.clientWidth - offset.right - offset.left,
+      top = 0 + offset.top,
+      bottom = element.clientHeight - offset.bottom - offset.top;
     context.lineWidth = styles.width;
     context.strokeStyle = styles.color;
-    context.beginPath();
-    context.lineTo(0 + offset.left, 0 + offset.top);
-    context.lineTo(element.clientWidth - offset.right, 0 + offset.top);
-    context.lineTo(
-      element.clientWidth - offset.right,
-      element.clientHeight - offset.bottom
-    );
-    context.lineTo(0 + offset.left, element.clientHeight - offset.bottom);
-    context.lineTo(0 + offset.left, 0 + offset.top);
-    context.closePath();
-    context.stroke();
+    context.fillStyle = styles.background;
+    context.rect(left, top, right, bottom);
+    context.fill();
+
     let xArray = [],
       yArray = [],
       isPx = type === 'px',
@@ -715,8 +744,13 @@ export default class Chart {
         pushed = false;
         x = 0;
         y = 0;
+        delete this.prevPinchDistance;
       },
       isTouch = 'ontouchstart' in document.documentElement;
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
 
     // desktop
     if (!isTouch) {
@@ -928,8 +962,17 @@ export default class Chart {
         if (touches.length === 2) {
           let first = touches[0],
             second = touches[1],
-            diff = first.clientX - second.clientX;
-          let nextLimit = data.limit.value + diff;
+            pinchDistance = Math.hypot(
+              first.clientX - second.clientX,
+              first.clientY - second.clientY
+            );
+          if (!this.prevPinchDistance) {
+            this.prevPinchDistance = pinchDistance;
+            return;
+          }
+          let pinchDiff = this.prevPinchDistance - pinchDistance;
+          this.prevPinchDistance = pinchDistance;
+          let nextLimit = data.limit.value + pinchDiff;
           data.limit.value = (() => {
             if (data.limit.min && nextLimit < data.limit.min) {
               return data.limit.min;

@@ -11,7 +11,7 @@ window.addEventListener('load', () => {
         settings: {
           data: {
             limit: {
-              value: 100
+              
             }
           }
         }
@@ -35,6 +35,6 @@ window.addEventListener('load', () => {
       } else {
         chart.newDot();
       }
-    }, 1000);
+    }, 100);
   });
 });
