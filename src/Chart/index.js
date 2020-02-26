@@ -43,6 +43,12 @@ const deepMerge = (obj1, obj2) => {
   }
   return obj1;
 };
+
+const addEventListeners = (element, events, func) => {
+  events.forEach(event => {
+    element.addEventListener(event, func);
+  });
+};
 export default class Chart {
   constructor({
     canvas = false,
@@ -658,131 +664,221 @@ export default class Chart {
         pushed = false;
         x = 0;
         y = 0;
-      };
+      },
+      isTouch = 'ontouchstart' in document.documentElement;
 
-    element.addEventListener('mouseup', () => {
-      stopFunc();
-    });
-    element.addEventListener('mouseleave', () => {
-      stopFunc();
-      targetClear();
-    });
-
-    element.addEventListener('mousedown', e => {
-      pushed = {
-        x: e.clientX,
-        y: e.clientY
-      };
-      x = e.clientX;
-      y = e.clientY;
-    });
-
-    element.addEventListener('mousemove', e => {
-      let { settings } = this,
-        { valuesLine, timeLine, data, line, offset } = settings,
-        { dots } = this.getDots('all'),
-        elementOffset = element.getBoundingClientRect();
-      targetClear();
-      element.style.cursor = 'default';
-      //target point
-      if (
-        e.clientX >= elementOffset.left + offset.left + 1 &&
-        e.clientX <= elementOffset.left + elementOffset.width - offset.right &&
-        e.clientY >= elementOffset.top + offset.top &&
-        e.clientY <= elementOffset.bottom - offset.bottom
-      ) {
-        if (target.enable) {
-          element.style.cursor = 'crosshair';
-        }
-        target.coords = {
-          x: e.clientX - elementOffset.left,
-          y: e.clientY - elementOffset.top
+    // desktop
+    if (!isTouch) {
+      element.addEventListener('mouseup', () => {
+        stopFunc();
+      });
+      element.addEventListener('mouseleave', () => {
+        stopFunc();
+        targetClear();
+      });
+      element.addEventListener('mousedown', e => {
+        x = e.clientX;
+        y = e.clientY;
+        pushed = {
+          x,
+          y
         };
-      }
-
-      //line view
-      if (
-        e.clientX >= elementOffset.left + line.offset.left &&
-        e.clientX <=
-          elementOffset.left + elementOffset.width - line.offset.right &&
-        e.clientY >= elementOffset.top + offset.top &&
-        e.clientY <= elementOffset.bottom - offset.bottom
-      ) {
-        if (pushed) {
-          let nextOffset = data.offset + e.clientX - x;
-          if (nextOffset < 0) nextOffset = 0;
-          if (nextOffset > dots.length - data.limit.value)
-            nextOffset = dots.length - data.limit.value;
-          data.offset = nextOffset;
+      });
+      element.addEventListener('mousemove', e => {
+        let { settings } = this,
+          { valuesLine, timeLine, data, line, offset } = settings,
+          { dots } = this.getDots('all'),
+          elementOffset = element.getBoundingClientRect();
+        targetClear();
+        element.style.cursor = 'default';
+        //target point
+        if (
+          e.clientX >= elementOffset.left + offset.left + 1 &&
+          e.clientX <=
+            elementOffset.left + elementOffset.width - offset.right &&
+          e.clientY >= elementOffset.top + offset.top &&
+          e.clientY <= elementOffset.bottom - offset.bottom
+        ) {
+          if (target.enable) {
+            element.style.cursor = 'crosshair';
+          }
+          target.coords = {
+            x: e.clientX - elementOffset.left,
+            y: e.clientY - elementOffset.top
+          };
         }
-      }
 
-      //values panel
-      if (
-        valuesLine.enable &&
-        valuesLine.resize &&
-        e.clientX >= elementOffset.left + elementOffset.width - offset.right
-      ) {
-        element.style.cursor = 'row-resize';
-        if (pushed) {
-          let nextTop = y - e.clientY,
-            nextBottom = e.clientY - y,
-            zoomIn = e.clientY > y,
-            zoomOut = e.clientY < y;
-          if (zoomIn) {
-            let maxOffset = 60,
-              maxTop =
-                (elementOffset.height + offset.top - offset.bottom) / 2 -
-                maxOffset,
-              maxBottom =
-                (elementOffset.height + offset.bottom - offset.top) / 2 -
-                maxOffset;
-            line.offset.top = (() => {
-              if (line.offset.top - nextTop < maxTop) {
-                return line.offset.top - nextTop;
+        //line view
+        if (
+          e.clientX >= elementOffset.left + line.offset.left &&
+          e.clientX <=
+            elementOffset.left + elementOffset.width - line.offset.right &&
+          e.clientY >= elementOffset.top + offset.top &&
+          e.clientY <= elementOffset.bottom - offset.bottom
+        ) {
+          if (pushed) {
+            let nextOffset = data.offset + e.clientX - x;
+            if (nextOffset < 0) nextOffset = 0;
+            if (nextOffset > dots.length - data.limit.value)
+              nextOffset = dots.length - data.limit.value;
+            data.offset = nextOffset;
+          }
+        }
+
+        //values panel
+        if (
+          valuesLine.enable &&
+          valuesLine.resize &&
+          e.clientX >= elementOffset.left + elementOffset.width - offset.right
+        ) {
+          element.style.cursor = 'row-resize';
+          if (pushed) {
+            let nextTop = y - e.clientY,
+              nextBottom = e.clientY - y,
+              zoomIn = e.clientY > y,
+              zoomOut = e.clientY < y;
+            if (zoomIn) {
+              let maxOffset = 60,
+                maxTop =
+                  (elementOffset.height + offset.top - offset.bottom) / 2 -
+                  maxOffset,
+                maxBottom =
+                  (elementOffset.height + offset.bottom - offset.top) / 2 -
+                  maxOffset;
+              line.offset.top = (() => {
+                if (line.offset.top - nextTop < maxTop) {
+                  return line.offset.top - nextTop;
+                } else {
+                  return maxTop;
+                }
+              })();
+              line.offset.bottom = (() => {
+                if (line.offset.bottom + nextBottom < maxBottom) {
+                  return line.offset.bottom + nextBottom;
+                } else {
+                  return maxBottom;
+                }
+              })();
+            }
+            if (zoomOut) {
+              line.offset.top = (() => {
+                if (line.offset.top - nextTop > offset.top) {
+                  return line.offset.top - nextTop;
+                } else {
+                  return offset.top;
+                }
+              })();
+              line.offset.bottom = (() => {
+                if (line.offset.bottom + nextBottom > offset.bottom) {
+                  return line.offset.bottom + nextBottom;
+                } else {
+                  return offset.bottom;
+                }
+              })();
+            }
+          }
+        }
+
+        // time panel
+        if (
+          timeLine.enable &&
+          timeLine.resize &&
+          e.clientX >= elementOffset.left + line.offset.left &&
+          e.clientX <=
+            elementOffset.left + elementOffset.width - line.offset.right &&
+          e.clientY >= elementOffset.bottom - offset.bottom
+        ) {
+          element.style.cursor = 'col-resize';
+          if (pushed) {
+            let nextLimit = data.limit.value + e.clientX - x;
+            data.limit.value = (() => {
+              if (data.limit.min && nextLimit < data.limit.min) {
+                return data.limit.min;
+              } else if (data.limit.max && nextLimit > data.limit.max) {
+                return data.limit.max;
+              } else if (dots.length < nextLimit) {
+                return dots.length;
+              } else if (nextLimit <= 2) {
+                return 2;
               } else {
-                return maxTop;
-              }
-            })();
-            line.offset.bottom = (() => {
-              if (line.offset.bottom + nextBottom < maxBottom) {
-                return line.offset.bottom + nextBottom;
-              } else {
-                return maxBottom;
+                return nextLimit;
               }
             })();
           }
-          if (zoomOut) {
-            line.offset.top = (() => {
-              if (line.offset.top - nextTop > offset.top) {
-                return line.offset.top - nextTop;
-              } else {
-                return offset.top;
-              }
-            })();
-            line.offset.bottom = (() => {
-              if (line.offset.bottom + nextBottom > offset.bottom) {
-                return line.offset.bottom + nextBottom;
-              } else {
-                return offset.bottom;
-              }
-            })();
+        }
+        if (pushed) {
+          x = e.clientX;
+          y = e.clientY;
+        }
+      });
+    }
+    //mobile
+    else {
+      element.addEventListener('touchend', () => {
+        stopFunc();
+        targetClear();
+      });
+      element.addEventListener('touchstart', e => {
+        let touches = e.touches,
+          elementOffset = element.getBoundingClientRect(),
+          touch = touches[0];
+        if (touches.length === 1) {
+          target.coords = {
+            x: touch.clientX - elementOffset.left,
+            y: touch.clientY - elementOffset.top
+          };
+        }
+        x = touch.clientX;
+        y = touch.clientY;
+        pushed = {
+          x,
+          y
+        };
+      });
+      element.addEventListener('touchmove', e => {
+        let { settings } = this,
+          { valuesLine, timeLine, data, line, offset } = settings,
+          { dots } = this.getDots('all'),
+          elementOffset = element.getBoundingClientRect(),
+          touches = e.touches,
+          touch = touches[0];
+        targetClear();
+        if (touches.length === 1) {
+          //target point
+          if (
+            touch.clientX >= elementOffset.left + offset.left + 1 &&
+            touch.clientX <=
+              elementOffset.left + elementOffset.width - offset.right &&
+            touch.clientY >= elementOffset.top + offset.top &&
+            touch.clientY <= elementOffset.bottom - offset.bottom
+          ) {
+            target.coords = {
+              x: touch.clientX - elementOffset.left,
+              y: touch.clientY - elementOffset.top
+            };
+          }
+          //line view
+          if (
+            touch.clientX >= elementOffset.left + line.offset.left &&
+            touch.clientX <=
+              elementOffset.left + elementOffset.width - line.offset.right &&
+            touch.clientY >= elementOffset.top + offset.top &&
+            touch.clientY <= elementOffset.bottom - offset.bottom
+          ) {
+            if (pushed) {
+              let nextOffset = data.offset + touch.clientX - x;
+              if (nextOffset < 0) nextOffset = 0;
+              if (nextOffset > dots.length - data.limit.value)
+                nextOffset = dots.length - data.limit.value;
+              data.offset = nextOffset;
+            }
           }
         }
-      }
-
-      // time panel
-      if (
-        timeLine.enable &&
-        timeLine.resize &&
-        e.clientX >= elementOffset.left + line.offset.left &&
-        e.clientX <=
-          elementOffset.left + elementOffset.width - line.offset.right &&
-        e.clientY >= elementOffset.bottom - offset.bottom
-      ) {
-        element.style.cursor = 'col-resize';
-        if (pushed) {
-          let nextLimit = data.limit.value + e.clientX - x;
+        if (touches.length === 2) {
+          let first = touches[0],
+            second = touches[1],
+            diff = first.clientX - second.clientX;
+          let nextLimit = data.limit.value + diff;
           data.limit.value = (() => {
             if (data.limit.min && nextLimit < data.limit.min) {
               return data.limit.min;
@@ -797,11 +893,11 @@ export default class Chart {
             }
           })();
         }
-      }
-      if (pushed) {
-        x = e.clientX;
-        y = e.clientY;
-      }
-    });
+        if (pushed) {
+          x = touch.clientX;
+          y = touch.clientY;
+        }
+      });
+    }
   }
 }
