@@ -93,13 +93,25 @@ export default class Chart {
           color: '#ffffff',
           width: 2,
           lineGradient: {
-            from: '#954ce9',
-            to: '#24c1ed',
+            points: [
+              {
+                color: '#954ce9'
+              },
+              {
+                color: '#24c1ed'
+              }
+            ],
             enable: true
           },
           backgroundGradient: {
-            from: 'rgba(149, 76, 233, 0.17)',
-            to: 'rgba(149, 76, 233, 0)',
+            points: [
+              {
+                color: 'rgba(149, 76, 233, 0.17)'
+              },
+              {
+                color: 'rgba(149, 76, 233, 0)'
+              }
+            ],
             enable: true
           }
         },
@@ -125,16 +137,19 @@ export default class Chart {
             background: '#6f7dab',
             color: '#fff'
           },
-          dots: [{
-            width: 10,
-            background: 'transparent',
-            strokeColor: '#6f7dab',
-            strokeWidth: 1
-          }, {
-            width: 4,
-            background: '#24c1ed',
-            strokeColor: 'transparent'
-          }]
+          dots: [
+            {
+              width: 10,
+              background: 'transparent',
+              strokeColor: '#6f7dab',
+              strokeWidth: 1
+            },
+            {
+              width: 4,
+              background: '#24c1ed',
+              strokeColor: 'transparent'
+            }
+          ]
         }
       },
       grid: {
@@ -513,9 +528,14 @@ export default class Chart {
     context.strokeStyle = color;
     context.lineJoin = 'round';
     if (lineGradient.enable) {
-      let fill = context.createLinearGradient(lineEnd, 0, lineStart, 0);
-      fill.addColorStop(0, lineGradient.from);
-      fill.addColorStop(1, lineGradient.to);
+      let fill = context.createLinearGradient(lineEnd, 0, lineStart, 0),
+        points = lineGradient.points || [];
+      if (points.length === 1) points.push(points[0]);
+      points.forEach((point, index) => {
+        let { stop, color } = point;
+        if (!stop && stop !== 0) stop = (1 / (points.length - 1)) * index;
+        fill.addColorStop(stop, color);
+      });
       context.strokeStyle = fill;
     }
     for (let i = dots.length - 1; i >= 0; i--) {
@@ -527,12 +547,15 @@ export default class Chart {
       context.beginPath();
       context.lineWidth = 0;
       context.strokeStyle = 'transparent';
-      if (lineGradient.enable) {
-        let fill = context.createLinearGradient(0, lineTop, 0, lineBottom);
-        fill.addColorStop(0, backgroundGradient.from);
-        fill.addColorStop(1, backgroundGradient.to);
-        context.fillStyle = fill;
-      }
+      let fill = context.createLinearGradient(0, lineTop, 0, lineBottom),
+        points = backgroundGradient.points || [];
+      if (points.length === 1) points.push(points[0]);
+      points.forEach((point, index) => {
+        let { stop, color } = point;
+        if (!stop && stop !== 0) stop = (1 / (points.length - 1)) * index;
+        fill.addColorStop(stop, color);
+      });
+      context.fillStyle = fill;
       context.lineTo(lineStart, lineBottom);
       for (let i = dots.length - 1; i >= 0; i--) {
         let dot = dots[i];
@@ -598,7 +621,7 @@ export default class Chart {
     if (!currentDot) return;
     let maxDotWidth = 0;
     //draw dot
-    styles.dots.forEach((dot) => {
+    styles.dots.forEach(dot => {
       context.beginPath();
       context.strokeStyle = dot.strokeColor;
       context.lineWidth = dot.strokeWidth;
@@ -606,8 +629,8 @@ export default class Chart {
       context.arc(currentDot.x, currentDot.y, dot.width, 0, 2 * Math.PI);
       context.fill();
       context.stroke();
-      if(dot.width && dot.width > maxDotWidth) maxDotWidth = dot.width;
-    })
+      if (dot.width && dot.width > maxDotWidth) maxDotWidth = dot.width;
+    });
 
     //draw horizontal line
     context.lineWidth = styles.line.width;
