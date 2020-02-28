@@ -912,10 +912,10 @@ export default class Chart {
             if (zoomIn) {
               let maxTop =
                   (elementOffset.height + offset.top - offset.bottom) / 2 -
-                  (valuesLine.resize.topMin || 60),
+                  (valuesLine.resize.topMin || 0),
                 maxBottom =
                   (elementOffset.height + offset.bottom - offset.top) / 2 -
-                  (valuesLine.resize.bottomMin || 60);
+                  (valuesLine.resize.bottomMin || 0);
               line.offset.top = (() => {
                 if (line.offset.top - nextTop < maxTop) {
                   return line.offset.top - nextTop;
