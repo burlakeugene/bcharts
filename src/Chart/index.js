@@ -174,12 +174,17 @@ export default class Chart {
       },
       valuesLine: {
         enable: true,
-        resize: true,
+        resize: {
+          enable: true,
+          topMin: 80,
+          bottomMin: 80
+        },
         count: 10,
         digits: 2,
         styles: {
           color: '#6f7dab'
-        }
+        },
+        overflowValues: false
       },
       timeStamp: +new Date()
     };
@@ -230,8 +235,8 @@ export default class Chart {
     this.drawBackground();
     this.drawGrid();
     this.drawLine();
-    this.drawTime();
     this.drawValues();
+    this.drawTime();
     this.drawTarget();
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
@@ -457,21 +462,22 @@ export default class Chart {
         lineHeight
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
-      { valuesLine, offset } = settings,
-      { count, enable, digits, styles } = valuesLine,
+      { valuesLine, line, offset, view } = settings,
+      { count, enable, digits, styles, overflowValues } = valuesLine,
       { element, context } = canvas,
       valuesArray = [];
     if (!enable) return;
     let yStep = lineHeight / (count - 1),
       yStart = lineTop + yStep,
-      yMiddle = (element.clientHeight + offset.top - offset.bottom) / 2;
+      yMiddle =
+        (element.clientHeight + line.offset.top - line.offset.bottom) / 2;
     if (min === max) {
       valuesArray.push({
         text: max,
         y: yMiddle
       });
-      let topCount = (yMiddle - offset.top) / yStep,
-        bottomCount = (yMiddle - offset.top) / yStep;
+      let topCount = (yMiddle - line.offset.top) / yStep,
+        bottomCount = (yMiddle - line.offset.top) / yStep;
       for (let i = 1; i <= topCount; i++) {
         valuesArray.push({
           text: max + max * i,
@@ -502,6 +508,45 @@ export default class Chart {
         y: lineBottom
       });
     }
+    if (
+      overflowValues &&
+      (line.offset.top > offset.top || line.offset.bottom < offset.bottom)
+    ) {
+      let valueStep = (max - min) / (count - 1),
+        topValue = Math.max.apply(
+          null,
+          valuesArray.map(val => val.text)
+        ),
+        topY = Math.min.apply(
+          null,
+          valuesArray.map(val => val.y)
+        ),
+        bottomValue = Math.min.apply(
+          null,
+          valuesArray.map(val => val.text)
+        ),
+        bottomY = Math.max.apply(
+          null,
+          valuesArray.map(val => val.y)
+        ),
+        topCount = Math.round((line.offset.top - offset.top) / yStep),
+        bottomCount = Math.round((line.offset.bottom - offset.bottom) / yStep);
+      if (max === min) {
+        valueStep = max;
+      }
+      for (let i = 1; i <= topCount; i++) {
+        valuesArray.push({
+          text: topValue + valueStep * i,
+          y: topY - yStep * i
+        });
+      }
+      for (let i = 1; i <= bottomCount; i++) {
+        valuesArray.push({
+          text: bottomValue - valueStep * i,
+          y: bottomY + yStep * i
+        });
+      }
+    }
     for (let i = 0; i <= valuesArray.length - 1; i++) {
       let value = valuesArray[i];
       context.font = '100 12px arial';
@@ -513,6 +558,25 @@ export default class Chart {
         element.clientWidth - offset.right / 2,
         value.y
       );
+    }
+    if (overflowValues) {
+      context.fillStyle = view.styles.background;
+      context.strokeStyle = 'transparent';
+      context.beginPath();
+      context.rect(0, 0, element.clientWidth, offset.top - 5);
+      context.fill();
+      context.stroke();
+      context.fillStyle = view.styles.background;
+      context.strokeStyle = 'transparent';
+      context.beginPath();
+      context.rect(
+        0,
+        element.clientHeight - offset.bottom + 5,
+        element.clientWidth,
+        element.clientHeight
+      );
+      context.fill();
+      context.stroke();
     }
   }
   drawLine() {
@@ -836,7 +900,7 @@ export default class Chart {
         //values panel
         if (
           valuesLine.enable &&
-          valuesLine.resize &&
+          valuesLine.resize.enable &&
           e.clientX >= elementOffset.left + elementOffset.width - offset.right
         ) {
           element.style.cursor = 'row-resize';
@@ -846,13 +910,12 @@ export default class Chart {
               zoomIn = e.clientY > y,
               zoomOut = e.clientY < y;
             if (zoomIn) {
-              let maxOffset = 60,
-                maxTop =
+              let maxTop =
                   (elementOffset.height + offset.top - offset.bottom) / 2 -
-                  maxOffset,
+                  (valuesLine.resize.topMin || 60),
                 maxBottom =
                   (elementOffset.height + offset.bottom - offset.top) / 2 -
-                  maxOffset;
+                  (valuesLine.resize.bottomMin || 60);
               line.offset.top = (() => {
                 if (line.offset.top - nextTop < maxTop) {
                   return line.offset.top - nextTop;
