@@ -184,7 +184,7 @@ export default class Chart {
         styles: {
           color: '#6f7dab'
         },
-        overflowValues: false
+        overflowValues: true
       },
       timeStamp: +new Date()
     };
@@ -231,6 +231,7 @@ export default class Chart {
     this.listeners();
     this.render();
   }
+  resize() {}
   render() {
     this.drawBackground();
     this.drawGrid();
@@ -839,6 +840,31 @@ export default class Chart {
       e.preventDefault();
     });
 
+    window.addEventListener('resize', e => {
+      let { settings } = this,
+        { line, offset, valuesLine } = settings,
+        elementOffset = element.getBoundingClientRect(),
+        maxTop =
+          (elementOffset.height + offset.top - offset.bottom) / 2 -
+          (valuesLine.resize.topMin || 0),
+        maxBottom =
+          (elementOffset.height + offset.bottom - offset.top) / 2 -
+          (valuesLine.resize.bottomMin || 0);
+      if (line.offset.top > maxTop) {
+        line.offset.top = maxTop;
+      }
+      if (line.offset.top < offset.top) {
+        line.offset.top = offset.top;
+      }
+      if (line.offset.bottom > maxBottom) {
+        line.offset.bottom = maxBottom;
+      }
+      if (line.offset.bottom < offset.bottom) {
+        line.offset.bottom = offset.bottom;
+      }
+      this.resize();
+    });
+
     // desktop
     if (!isTouch) {
       element.addEventListener('mouseup', () => {
@@ -947,6 +973,12 @@ export default class Chart {
                 }
               })();
             }
+          }
+          if (line.offset.top < offset.top) {
+            line.offset.top = offset.top;
+          }
+          if (line.offset.bottom < offset.bottom) {
+            line.offset.bottom = offset.bottom;
           }
         }
 
