@@ -184,7 +184,7 @@ export default class Chart {
         styles: {
           color: '#6f7dab'
         },
-        overflowValues: true
+        overflowValues: false
       },
       timeStamp: +new Date()
     };
