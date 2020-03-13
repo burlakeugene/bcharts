@@ -415,9 +415,23 @@ export default class Chart {
       lineHeight
     };
   }
-  drawTime() {
+  findDotByX(x) {
     let draw = this.getDots('draw'),
-      {
+      dots = [...draw.dots],
+      currentDot = false;
+    for (let i = 0; i <= dots.length - 1; i++) {
+      let dot = dots[i],
+        dotNext = dots[i + 1],
+        currentX = Math.round(dot.x),
+        nextX = dotNext ? Math.round(dotNext.x) : 0;
+      if ((nextX || nextX === 0) && x >= currentX && x <= nextX) {
+        currentDot = (nextX + currentX) / 2 <= x ? dotNext : dot;
+      }
+    }
+    return currentDot;
+  }
+  drawTime() {
+    let {
         lineStart,
         lineEnd,
         lineView,
@@ -428,33 +442,22 @@ export default class Chart {
       { canvas, settings } = this,
       { timeLine, timeStamp, offset } = settings,
       { enable, count, styles } = timeLine,
-      { element, context } = canvas,
-      dots = [...draw.dots],
-      timesArray = [];
+      { element, context } = canvas;
     if (!enable) return;
-    let each = Math.ceil(dots.length / count),
-      counter = 0;
-    console.log(each);
-    for (let i = dots.length - 1; i >= 0; i--) {
-      if (dots.length <= count) timesArray.push(dots[i]);
-      else {
-        if (counter === each) counter = 0;
-        if (!counter) timesArray.push(dots[i]);
-        counter++;
-        if (i === 0 && counter / each >= 1) {
-          timesArray.push(dots[i]);
-        }
-      }
-    }
-    for (let i = 0; i <= timesArray.length - 1; i++) {
-      let dot = timesArray[i];
+    let start = lineEnd,
+      end = lineStart,
+      width = (end - start) / count;
+    width += width / (count - 1);
+    for (let i = 0; i < count; i++) {
+      let x = start + width * i,
+        dot = this.findDotByX(x);
       context.font = '100 12px arial';
       context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
         generateDate(dot && dot.time ? dot.time : timeStamp),
-        dot ? dot.x : 0,
+        x ? x : 0,
         element.clientHeight - offset.bottom / 2
       );
     }
@@ -677,21 +680,12 @@ export default class Chart {
       { target, offset, valuesLine, timeStamp } = settings,
       { styles, coords } = target,
       { x, y } = coords,
-      { element, context } = canvas,
-      draw = this.getDots('draw'),
-      dots = [...draw.dots],
-      currentDot = false;
+      { element, context } = canvas;
     if (!target.enable || !x || !y) return;
-    for (let i = 0; i <= dots.length - 1; i++) {
-      let dot = dots[i],
-        dotNext = dots[i + 1];
-      if (dotNext && x >= dot.x && x <= dotNext.x) {
-        currentDot = (dotNext.x + dot.x) / 2 <= x ? dotNext : dot;
-      }
-    }
-
+    let currentDot = this.findDotByX(x),
+      maxDotWidth = 0;
     if (!currentDot) return;
-    let maxDotWidth = 0;
+
     //draw dot
     styles.dots.forEach(dot => {
       context.beginPath();
@@ -711,7 +705,7 @@ export default class Chart {
         !styles.line.horizontal || styles.line.horizontal.enable,
       verticalEnable = !styles.line.vertical || styles.line.vertical.enable;
 
-    if(horizontalEnable){
+    if (horizontalEnable) {
       context.beginPath();
       context.moveTo(0 + offset.left, currentDot.y);
       context.lineTo(currentDot.x - maxDotWidth, currentDot.y);
@@ -722,7 +716,7 @@ export default class Chart {
       context.stroke();
     }
 
-    if(verticalEnable){
+    if (verticalEnable) {
       context.beginPath();
       context.moveTo(currentDot.x, 0 + offset.top);
       context.lineTo(currentDot.x, currentDot.y - maxDotWidth);
@@ -735,7 +729,7 @@ export default class Chart {
 
     //draw panels
     let panels = {};
-    if(horizontalEnable){
+    if (horizontalEnable) {
       panels.right = {
         background: styles.panel.background,
         color: styles.panel.color,
@@ -746,7 +740,7 @@ export default class Chart {
         text: currentDot.value.toFixed(valuesLine.digits || 2)
       };
     }
-    if(verticalEnable){
+    if (verticalEnable) {
       panels.bottom = {
         background: styles.panel.background,
         color: styles.panel.color,
