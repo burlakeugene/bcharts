@@ -131,7 +131,13 @@ export default class Chart {
         styles: {
           line: {
             color: '#6f7dab',
-            width: 1
+            width: 1,
+            horizontal: {
+              enable: true
+            },
+            vertical: {
+              enable: true
+            }
           },
           panel: {
             background: '#6f7dab',
@@ -428,6 +434,7 @@ export default class Chart {
     if (!enable) return;
     let each = Math.ceil(dots.length / count),
       counter = 0;
+    console.log(each);
     for (let i = dots.length - 1; i >= 0; i--) {
       if (dots.length <= count) timesArray.push(dots[i]);
       else {
@@ -697,31 +704,50 @@ export default class Chart {
       if (dot.width && dot.width > maxDotWidth) maxDotWidth = dot.width;
     });
 
-    //draw horizontal line
     context.lineWidth = styles.line.width;
     context.strokeStyle = styles.line.color;
-    context.beginPath();
-    context.moveTo(0 + offset.left, currentDot.y);
-    context.lineTo(currentDot.x - maxDotWidth, currentDot.y);
-    context.stroke();
-    context.beginPath();
-    context.moveTo(currentDot.x + maxDotWidth, currentDot.y);
-    context.lineTo(element.clientWidth - offset.right, currentDot.y);
-    context.stroke();
 
-    //draw vertical line
-    context.beginPath();
-    context.moveTo(currentDot.x, 0 + offset.top);
-    context.lineTo(currentDot.x, currentDot.y - maxDotWidth);
-    context.stroke();
-    context.beginPath();
-    context.moveTo(currentDot.x, currentDot.y + maxDotWidth);
-    context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
-    context.stroke();
+    let horizontalEnable =
+        !styles.line.horizontal || styles.line.horizontal.enable,
+      verticalEnable = !styles.line.vertical || styles.line.vertical.enable;
+
+    if(horizontalEnable){
+      context.beginPath();
+      context.moveTo(0 + offset.left, currentDot.y);
+      context.lineTo(currentDot.x - maxDotWidth, currentDot.y);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(currentDot.x + maxDotWidth, currentDot.y);
+      context.lineTo(element.clientWidth - offset.right, currentDot.y);
+      context.stroke();
+    }
+
+    if(verticalEnable){
+      context.beginPath();
+      context.moveTo(currentDot.x, 0 + offset.top);
+      context.lineTo(currentDot.x, currentDot.y - maxDotWidth);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(currentDot.x, currentDot.y + maxDotWidth);
+      context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
+      context.stroke();
+    }
 
     //draw panels
-    let panels = {
-      bottom: {
+    let panels = {};
+    if(horizontalEnable){
+      panels.right = {
+        background: styles.panel.background,
+        color: styles.panel.color,
+        width: offset.right,
+        height: 20,
+        x: element.clientWidth - offset.right,
+        y: currentDot.y - 20 / 2,
+        text: currentDot.value.toFixed(valuesLine.digits || 2)
+      };
+    }
+    if(verticalEnable){
+      panels.bottom = {
         background: styles.panel.background,
         color: styles.panel.color,
         width: 80,
@@ -731,17 +757,8 @@ export default class Chart {
         text: generateDate(
           currentDot && currentDot.time ? currentDot.time : timeStamp
         )
-      },
-      right: {
-        background: styles.panel.background,
-        color: styles.panel.color,
-        width: offset.right,
-        height: 20,
-        x: element.clientWidth - offset.right,
-        y: currentDot.y - 20 / 2,
-        text: currentDot.value.toFixed(valuesLine.digits || 2)
-      }
-    };
+      };
+    }
 
     Object.values(panels).forEach(panel => {
       context.strokeStyle = context.fillStyle = panel.background;
