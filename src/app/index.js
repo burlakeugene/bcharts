@@ -21,12 +21,12 @@ window.addEventListener('load', () => {
             }
           })
           .then(res => {
-            res && res[0] && chart.newDot({
+            res && res[0] && chart.newPoint({
               value: (res[0].ask + res[0].bid) / 2
             });
           });
       } else {
-        chart.newDot();
+        chart.newPoint();
       }
     }, 100);
   });

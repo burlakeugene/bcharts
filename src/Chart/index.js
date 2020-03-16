@@ -73,7 +73,8 @@ export default class Chart {
       data: {
         offset: 0,
         limit: {
-          value: 100
+          value: 100,
+          min: 10
         }
       },
       offset: { ...offset },
@@ -143,7 +144,7 @@ export default class Chart {
             background: '#6f7dab',
             color: '#fff'
           },
-          dots: [
+          points: [
             {
               width: 10,
               background: 'transparent',
@@ -173,6 +174,10 @@ export default class Chart {
       timeLine: {
         enable: true,
         resize: true,
+        mousewheel: {
+          enable: true,
+          speed: 1
+        },
         count: 5,
         styles: {
           color: '#6f7dab'
@@ -203,6 +208,7 @@ export default class Chart {
       newSettings.line.offset = newSettings.offset;
     }
     deepMerge(this.settings, newSettings);
+    this.setPointsLimit(false, false);
   }
   getSettings() {
     return this.settings;
@@ -214,21 +220,21 @@ export default class Chart {
     return this.data;
   }
   getLast() {
-    let last = this.getDots('last');
+    let last = this.getPoints('last');
     return last;
   }
-  newDot({ value = false, time = false } = {}) {
-    let { dots } = this.getDots('all'),
+  newPoint({ value = false, time = false } = {}) {
+    let { points } = this.getPoints('all'),
       { settings } = this,
       { data } = settings,
-      lastDot = dots[dots.length - 1],
-      prevValue = lastDot ? lastDot.value : 0,
+      lastPoint = points[points.length - 1],
+      prevValue = lastPoint ? lastPoint.value : 0,
       randomValue = Math.random() * (Math.random() > 0.5 ? -1 : 1),
       currentTime = +new Date();
     time = time || currentTime;
     value = parseFloat(value) || value === 0 ? value : prevValue + randomValue;
     if (data.offset) data.offset++;
-    dots.push({
+    points.push({
       value,
       time
     });
@@ -248,11 +254,12 @@ export default class Chart {
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
-  getDots(type) {
+  getPoints(type) {
     let { settings } = this,
       { data } = settings,
       all = this.data,
       draw = [...this.data];
+    console.log(data.limit.value);
     if (data.offset) {
       let rest = draw.length - data.offset,
         moreThenLimit = rest > data.limit.value;
@@ -278,15 +285,15 @@ export default class Chart {
       if (value > drawMax) drawMax = value;
       if (value < drawMin) drawMin = value;
     }
-    draw = this.calcDotsCoords(draw, drawMin, drawMax);
+    draw = this.calcPointsCoords(draw, drawMin, drawMax);
     let result = {
       all: {
-        dots: all,
+        points: all,
         max,
         min
       },
       draw: {
-        dots: draw,
+        points: draw,
         max: drawMax,
         min: drawMin
       },
@@ -295,7 +302,7 @@ export default class Chart {
     };
     return type && result[type] ? result[type] : result;
   }
-  calcDotsCoords(dots, min, max) {
+  calcPointsCoords(points, min, max) {
     let {
         lineStart,
         lineEnd,
@@ -304,21 +311,21 @@ export default class Chart {
         lineBottom,
         lineHeight
       } = this.getLineDrawCoords(),
-      lineLastDot = lineStart,
-      dotsLength = dots.length - 1;
-    for (let i = dotsLength; i >= 0; i--) {
-      let dot = dots[i],
-        value = dot.value,
-        partWidth = lineView / dotsLength;
-      dot.x = lineLastDot;
-      dot.y =
+      lineLastPoint = lineStart,
+      pointsLength = points.length - 1;
+    for (let i = pointsLength; i >= 0; i--) {
+      let point = points[i],
+        value = point.value,
+        partWidth = lineView / pointsLength;
+      point.x = lineLastPoint;
+      point.y =
         lineTop +
         lineHeight -
         lineHeight * (((value - min) * 100) / (max - min) / 100);
-      if (!dot.y) dot.y = lineHeight / 2 + lineTop;
-      lineLastDot -= partWidth;
+      if (!point.y) point.y = lineHeight / 2 + lineTop;
+      lineLastPoint -= partWidth;
     }
-    return dots;
+    return points;
   }
   getIndicatorCoords() {
     let { canvas, settings } = this,
@@ -326,7 +333,7 @@ export default class Chart {
       { offset } = line,
       { element } = canvas,
       { styles, animation } = indicator,
-      { draw, last } = this.getDots(),
+      { draw, last } = this.getPoints(),
       {
         lineStart,
         lineEnd,
@@ -415,20 +422,20 @@ export default class Chart {
       lineHeight
     };
   }
-  findDotByX(x) {
-    let draw = this.getDots('draw'),
-      dots = [...draw.dots],
-      currentDot = false;
-    for (let i = 0; i <= dots.length - 1; i++) {
-      let dot = dots[i],
-        dotNext = dots[i + 1],
-        currentX = Math.round(dot.x),
-        nextX = dotNext ? Math.round(dotNext.x) : 0;
+  findPointByX(x) {
+    let draw = this.getPoints('draw'),
+      points = [...draw.points],
+      currentPoint = false;
+    for (let i = 0; i <= points.length - 1; i++) {
+      let point = points[i],
+        pointNext = points[i + 1],
+        currentX = Math.round(point.x),
+        nextX = pointNext ? Math.round(pointNext.x) : 0;
       if ((nextX || nextX === 0) && x >= currentX && x <= nextX) {
-        currentDot = (nextX + currentX) / 2 <= x ? dotNext : dot;
+        currentPoint = (nextX + currentX) / 2 <= x ? pointNext : point;
       }
     }
-    return currentDot;
+    return currentPoint;
   }
   drawTime() {
     let {
@@ -450,20 +457,20 @@ export default class Chart {
     width += width / (count - 1);
     for (let i = 0; i < count; i++) {
       let x = start + width * i,
-        dot = this.findDotByX(x);
+        point = this.findPointByX(x);
       context.font = '100 12px arial';
       context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
-        generateDate(dot && dot.time ? dot.time : timeStamp),
+        generateDate(point && point.time ? point.time : timeStamp),
         x ? x : 0,
         element.clientHeight - offset.bottom / 2
       );
     }
   }
   drawValues() {
-    let { max, min } = this.getDots('draw'),
+    let { max, min } = this.getPoints('draw'),
       {
         lineStart,
         lineEnd,
@@ -596,45 +603,47 @@ export default class Chart {
       { backgroundGradient, lineGradient, color, width } = line.styles,
       { context, element } = canvas,
       { lineStart, lineEnd, lineTop, lineBottom } = this.getLineDrawCoords(),
-      draw = this.getDots('draw'),
-      { dots, min, max } = draw;
+      draw = this.getPoints('draw'),
+      { points, min, max } = draw;
     context.beginPath();
     context.lineWidth = width;
     context.strokeStyle = color;
     context.lineJoin = 'round';
     if (lineGradient.enable) {
       let fill = context.createLinearGradient(lineEnd, 0, lineStart, 0),
-        points = lineGradient.points || [];
-      if (points.length === 1) points.push(points[0]);
-      points.forEach((point, index) => {
-        let { stop, color } = point;
-        if (!stop && stop !== 0) stop = (1 / (points.length - 1)) * index;
+        gradientPoints = lineGradient.points || [];
+      if (gradientPoints.length === 1) gradientPoints.push(gradientPoints[0]);
+      gradientPoints.forEach((gradientPoint, index) => {
+        let { stop, color } = gradientPoint;
+        if (!stop && stop !== 0)
+          stop = (1 / (gradientPoints.length - 1)) * index;
         fill.addColorStop(stop, color);
       });
       context.strokeStyle = fill;
     }
-    for (let i = dots.length - 1; i >= 0; i--) {
-      let dot = dots[i];
-      context.lineTo(dot.x, dot.y);
+    for (let i = points.length - 1; i >= 0; i--) {
+      let point = points[i];
+      context.lineTo(point.x, point.y);
     }
     context.stroke();
-    if (backgroundGradient.enable && dots.length > 1) {
+    if (backgroundGradient.enable && points.length > 1) {
       context.beginPath();
       context.lineWidth = 0;
       context.strokeStyle = 'transparent';
       let fill = context.createLinearGradient(0, lineTop, 0, lineBottom),
-        points = backgroundGradient.points || [];
-      if (points.length === 1) points.push(points[0]);
-      points.forEach((point, index) => {
-        let { stop, color } = point;
-        if (!stop && stop !== 0) stop = (1 / (points.length - 1)) * index;
+        gradientPoints = backgroundGradient.points || [];
+      if (gradientPoints.length === 1) gradientPoints.push(points[0]);
+      gradientPoints.forEach((gradientPoint, index) => {
+        let { stop, color } = gradientPoint;
+        if (!stop && stop !== 0)
+          stop = (1 / (gradientPoints.length - 1)) * index;
         fill.addColorStop(stop, color);
       });
       context.fillStyle = fill;
       context.lineTo(lineStart, lineBottom);
-      for (let i = dots.length - 1; i >= 0; i--) {
-        let dot = dots[i];
-        context.lineTo(dot.x, dot.y);
+      for (let i = points.length - 1; i >= 0; i--) {
+        let point = points[i];
+        context.lineTo(point.x, point.y);
       }
       context.lineTo(lineEnd, lineBottom);
       context.fill();
@@ -682,20 +691,21 @@ export default class Chart {
       { x, y } = coords,
       { element, context } = canvas;
     if (!target.enable || !x || !y) return;
-    let currentDot = this.findDotByX(x),
-      maxDotWidth = 0;
-    if (!currentDot) return;
+    let currentPoint = this.findPointByX(x),
+      maxPointWidth = 0;
+    if (!currentPoint) return;
 
-    //draw dot
-    styles.dots.forEach(dot => {
+    //draw point
+    styles.points.forEach(point => {
       context.beginPath();
-      context.strokeStyle = dot.strokeColor;
-      context.lineWidth = dot.strokeWidth;
-      context.fillStyle = dot.background;
-      context.arc(currentDot.x, currentDot.y, dot.width, 0, 2 * Math.PI);
+      context.strokeStyle = point.strokeColor;
+      context.lineWidth = point.strokeWidth;
+      context.fillStyle = point.background;
+      context.arc(currentPoint.x, currentPoint.y, point.width, 0, 2 * Math.PI);
       context.fill();
       context.stroke();
-      if (dot.width && dot.width > maxDotWidth) maxDotWidth = dot.width;
+      if (point.width && point.width > maxPointWidth)
+        maxPointWidth = point.width;
     });
 
     context.lineWidth = styles.line.width;
@@ -707,23 +717,23 @@ export default class Chart {
 
     if (horizontalEnable) {
       context.beginPath();
-      context.moveTo(0 + offset.left, currentDot.y);
-      context.lineTo(currentDot.x - maxDotWidth, currentDot.y);
+      context.moveTo(0 + offset.left, currentPoint.y);
+      context.lineTo(currentPoint.x - maxPointWidth, currentPoint.y);
       context.stroke();
       context.beginPath();
-      context.moveTo(currentDot.x + maxDotWidth, currentDot.y);
-      context.lineTo(element.clientWidth - offset.right, currentDot.y);
+      context.moveTo(currentPoint.x + maxPointWidth, currentPoint.y);
+      context.lineTo(element.clientWidth - offset.right, currentPoint.y);
       context.stroke();
     }
 
     if (verticalEnable) {
       context.beginPath();
-      context.moveTo(currentDot.x, 0 + offset.top);
-      context.lineTo(currentDot.x, currentDot.y - maxDotWidth);
+      context.moveTo(currentPoint.x, 0 + offset.top);
+      context.lineTo(currentPoint.x, currentPoint.y - maxPointWidth);
       context.stroke();
       context.beginPath();
-      context.moveTo(currentDot.x, currentDot.y + maxDotWidth);
-      context.lineTo(currentDot.x, element.clientHeight - offset.bottom);
+      context.moveTo(currentPoint.x, currentPoint.y + maxPointWidth);
+      context.lineTo(currentPoint.x, element.clientHeight - offset.bottom);
       context.stroke();
     }
 
@@ -736,8 +746,8 @@ export default class Chart {
         width: offset.right,
         height: 20,
         x: element.clientWidth - offset.right,
-        y: currentDot.y - 20 / 2,
-        text: currentDot.value.toFixed(valuesLine.digits || 2)
+        y: currentPoint.y - 20 / 2,
+        text: currentPoint.value.toFixed(valuesLine.digits || 2)
       };
     }
     if (verticalEnable) {
@@ -746,10 +756,10 @@ export default class Chart {
         color: styles.panel.color,
         width: 80,
         height: offset.bottom,
-        x: currentDot.x - 80 / 2,
+        x: currentPoint.x - 80 / 2,
         y: element.clientHeight - offset.bottom,
         text: generateDate(
-          currentDot && currentDot.time ? currentDot.time : timeStamp
+          currentPoint && currentPoint.time ? currentPoint.time : timeStamp
         )
       };
     }
@@ -826,6 +836,25 @@ export default class Chart {
       context.stroke();
     }
   }
+  setPointsLimit(limit, resize = true) {
+    let { settings } = this,
+      { data } = settings,
+      { points } = this.getPoints('all');
+    if (!limit) limit = data.limit.value;
+    data.limit.value = (() => {
+      if (data.limit.min && limit < data.limit.min) {
+        return data.limit.min;
+      } else if (data.limit.max && limit > data.limit.max) {
+        return data.limit.max;
+      } else if (resize && points.length < limit) {
+        return points.length;
+      } else if (limit <= 2) {
+        return 2;
+      } else {
+        return limit;
+      }
+    })();
+  }
   listeners() {
     let { canvas, settings } = this,
       { target } = settings,
@@ -893,10 +922,23 @@ export default class Chart {
           y
         };
       });
+      element.addEventListener('mousewheel', e => {
+        let up = e.deltaY,
+          { data, timeLine } = settings,
+          { mousewheel } = timeLine,
+          nextLimit = data.limit.value + up;
+        if (!mousewheel.enable) return false;
+        if (mousewheel && mousewheel.speed) {
+          nextLimit =
+            data.limit.value +
+            (up > 0 ? mousewheel.speed : mousewheel.speed * -1);
+        }
+        this.setPointsLimit(nextLimit);
+      });
       element.addEventListener('mousemove', e => {
         let { settings } = this,
           { valuesLine, timeLine, data, line, offset } = settings,
-          { dots } = this.getDots('all'),
+          { points } = this.getPoints('all'),
           elementOffset = element.getBoundingClientRect();
         targetClear();
         element.style.cursor = 'default';
@@ -928,8 +970,8 @@ export default class Chart {
           if (pushed) {
             let nextOffset = data.offset + e.clientX - x;
             if (nextOffset < 0) nextOffset = 0;
-            if (nextOffset > dots.length - data.limit.value)
-              nextOffset = dots.length - data.limit.value;
+            if (nextOffset > points.length - data.limit.value)
+              nextOffset = points.length - data.limit.value;
             data.offset = nextOffset;
           }
         }
@@ -1005,19 +1047,7 @@ export default class Chart {
           element.style.cursor = 'col-resize';
           if (pushed) {
             let nextLimit = data.limit.value + e.clientX - x;
-            data.limit.value = (() => {
-              if (data.limit.min && nextLimit < data.limit.min) {
-                return data.limit.min;
-              } else if (data.limit.max && nextLimit > data.limit.max) {
-                return data.limit.max;
-              } else if (dots.length < nextLimit) {
-                return dots.length;
-              } else if (nextLimit <= 2) {
-                return 2;
-              } else {
-                return nextLimit;
-              }
-            })();
+            this.setPointsLimit(nextLimit);
           }
         }
         if (pushed) {
@@ -1052,7 +1082,7 @@ export default class Chart {
       element.addEventListener('touchmove', e => {
         let { settings } = this,
           { valuesLine, timeLine, data, line, offset } = settings,
-          { dots } = this.getDots('all'),
+          { points } = this.getPoints('all'),
           elementOffset = element.getBoundingClientRect(),
           touches = e.touches,
           touch = touches[0];
@@ -1082,8 +1112,8 @@ export default class Chart {
             if (pushed) {
               let nextOffset = data.offset + touch.clientX - x;
               if (nextOffset < 0) nextOffset = 0;
-              if (nextOffset > dots.length - data.limit.value)
-                nextOffset = dots.length - data.limit.value;
+              if (nextOffset > points.length - data.limit.value)
+                nextOffset = points.length - data.limit.value;
               data.offset = nextOffset;
             }
           }
@@ -1102,19 +1132,7 @@ export default class Chart {
           let pinchDiff = this.prevPinchDistance - pinchDistance;
           this.prevPinchDistance = pinchDistance;
           let nextLimit = data.limit.value + pinchDiff;
-          data.limit.value = (() => {
-            if (data.limit.min && nextLimit < data.limit.min) {
-              return data.limit.min;
-            } else if (data.limit.max && nextLimit > data.limit.max) {
-              return data.limit.max;
-            } else if (dots.length < nextLimit) {
-              return dots.length;
-            } else if (nextLimit <= 2) {
-              return 2;
-            } else {
-              return nextLimit;
-            }
-          })();
+          this.setPointsLimit(nextLimit);
         }
         if (pushed) {
           x = touch.clientX;
