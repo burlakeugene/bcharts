@@ -259,7 +259,6 @@ export default class Chart {
       { data } = settings,
       all = this.data,
       draw = [...this.data];
-    console.log(data.limit.value);
     if (data.offset) {
       let rest = draw.length - data.offset,
         moreThenLimit = rest > data.limit.value;
