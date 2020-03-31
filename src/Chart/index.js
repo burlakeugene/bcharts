@@ -59,8 +59,10 @@ export default class Chart {
       right: 50,
       top: 20,
       bottom: 40
-    }
+    },
+    actions = {}
   }) {
+    this.actions = actions;
     this.canvas = {
       element: canvas,
       context: canvas.getContext('2d'),
@@ -238,6 +240,12 @@ export default class Chart {
       value,
       time
     });
+  }
+  setPoint(index, { value, time }) {
+    let { points } = this.getPoints('all');
+    if (!points[index]) return;
+    points[index].value = value || points[index].value;
+    points[index].time = time || points[index].time;
   }
   init() {
     this.listeners();
@@ -684,7 +692,7 @@ export default class Chart {
     }
   }
   drawTarget() {
-    let { canvas, settings } = this,
+    let { canvas, settings, actions } = this,
       { target, offset, valuesLine, timeStamp } = settings,
       { styles, coords } = target,
       { x, y } = coords,
@@ -693,7 +701,7 @@ export default class Chart {
     let currentPoint = this.findPointByX(x),
       maxPointWidth = 0;
     if (!currentPoint) return;
-
+    if (actions.mouseOverPoint) actions.mouseOverPoint(currentPoint);
     //draw point
     styles.points.forEach(point => {
       context.beginPath();
@@ -855,7 +863,7 @@ export default class Chart {
     })();
   }
   listeners() {
-    let { canvas, settings } = this,
+    let { canvas, settings, actions } = this,
       { target } = settings,
       { element } = canvas,
       pushed = false,
@@ -972,6 +980,17 @@ export default class Chart {
             if (nextOffset > points.length - data.limit.value)
               nextOffset = points.length - data.limit.value;
             data.offset = nextOffset;
+          }
+          if (actions.mouseEnterLine && !this.enterLineBool) {
+            this.leaveLineBool = false;
+            this.enterLineBool = true;
+            actions.mouseEnterLine();
+          }
+        } else {
+          if (actions.mouseLeaveLine && !this.leaveLineBool) {
+            this.enterLineBool = false;
+            this.leaveLineBool = true;
+            actions.mouseLeaveLine();
           }
         }
 

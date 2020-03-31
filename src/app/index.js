@@ -4,30 +4,45 @@ import { Request, Url } from 'burlak';
 const request = new Request(),
   url = new Url();
 window.addEventListener('load', () => {
-  let canvas = document.querySelectorAll('canvas');
-  canvas.forEach(item => {
-    let chart = new Chart({
-        canvas: item
-      }),
-      symbol = url.getParam('symbol');
-    setInterval(() => {
-      if (symbol) {
-        request
-          .get({
-            url: 'https://quotes.instaforex.com/api/quotesTick',
-            clearData: true,
-            data: {
-              q: symbol
+  let charts = document.querySelectorAll('.chart');
+  charts.forEach(item => {
+    let div = item.querySelector('div'),
+      canvas = item.querySelector('canvas'),
+      chart = new Chart({
+        actions: {
+          mouseOverPoint: point => {},
+          mouseEnterLine: () => {},
+          mouseLeaveLine: () => {}
+        },
+        canvas,
+        settings: {
+          data: {
+            limit: {
+              value: 200,
+              min: 50
             }
-          })
-          .then(res => {
-            res && res[0] && chart.newPoint({
-              value: (res[0].ask + res[0].bid) / 2
-            });
-          });
-      } else {
-        chart.newPoint();
-      }
-    }, 100);
+          }
+        }
+      });
+
+    for (let i = 0; i <= 199; i++) {
+      chart.newPoint();
+    }
+    setInterval(() => {
+      let index = chart.getData().length - 1,
+        point = chart.getData()[index];
+      chart.setPoint(index, {
+        value: point.value + Math.random() * (Math.random() > 0.5 ? 1 : -1),
+        time: +new Date()
+      });
+    }, 500);
+    setInterval(() => {
+      let index = chart.getData().length - 1,
+        point = chart.getData()[index];
+      chart.newPoint({
+        value: point.value,
+        time: +new Date()
+      });
+    }, 5000);
   });
 });
