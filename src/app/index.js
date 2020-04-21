@@ -5,24 +5,28 @@ const request = new Request(),
   url = new Url();
 window.addEventListener('load', () => {
   let charts = document.querySelectorAll('.chart');
-  charts.forEach(item => {
+  charts.forEach((item) => {
     let div = item.querySelector('div'),
       canvas = item.querySelector('canvas'),
       chart = new Chart({
-        actions: {
-          mouseOverPoint: point => {},
-          mouseEnterLine: () => {},
-          mouseLeaveLine: () => {}
-        },
         canvas,
+        actions: {
+          mouseOverPoint: (point) => {},
+          mouseEnterLine: () => {},
+          mouseLeaveLine: () => {},
+        },
         settings: {
+          timeFormat: {
+            line: 'hh:ii:ss',
+            current: 'hh:mm:ss',
+          },
           data: {
             limit: {
               value: 200,
-              min: 50
-            }
-          }
-        }
+              min: 50,
+            },
+          },
+        },
       });
 
     for (let i = 0; i <= 199; i++) {
@@ -33,7 +37,7 @@ window.addEventListener('load', () => {
         point = chart.getData()[index];
       chart.setPoint(index, {
         value: point.value + Math.random() * (Math.random() > 0.5 ? 1 : -1),
-        time: +new Date()
+        time: +new Date(),
       });
     }, 500);
     setInterval(() => {
@@ -41,7 +45,7 @@ window.addEventListener('load', () => {
         point = chart.getData()[index];
       chart.newPoint({
         value: point.value,
-        time: +new Date()
+        time: +new Date(),
       });
     }, 5000);
   });

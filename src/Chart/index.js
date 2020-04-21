@@ -1,31 +1,23 @@
-const generateDate = time => {
+Date.prototype.formatting = function (format) {
+  var yyyy = this.getFullYear().toString();
+  format = format.replace(/yyyy/g, yyyy);
+  var mm = (this.getMonth() + 1).toString();
+  format = format.replace(/mm/g, mm[1] ? mm : '0' + mm[0]);
+  var dd = this.getDate().toString();
+  format = format.replace(/dd/g, dd[1] ? dd : '0' + dd[0]);
+  var hh = this.getHours().toString();
+  format = format.replace(/hh/g, hh[1] ? hh : '0' + hh[0]);
+  var ii = this.getMinutes().toString();
+  format = format.replace(/ii/g, ii[1] ? ii : '0' + ii[0]);
+  var ss = this.getSeconds().toString();
+  format = format.replace(/ss/g, ss[1] ? ss : '0' + ss[0]);
+  return format;
+};
+
+const generateDate = (time, format = 'hh:ii:ss') => {
   let result = '';
   time = new Date(time);
-  const getDay = day => {
-      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day];
-    },
-    getMonth = month => {
-      return [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ][month];
-    };
-  result =
-    (time.getHours() < 10 ? '0' + time.getHours() : time.getHours()) +
-    ':' +
-    (time.getMinutes() < 10 ? '0' + time.getMinutes() : time.getMinutes()) +
-    ':' +
-    (time.getSeconds() < 10 ? '0' + time.getSeconds() : time.getSeconds());
+  result = time.formatting(format);
   return result;
 };
 
@@ -45,7 +37,7 @@ const deepMerge = (obj1, obj2) => {
 };
 
 const addEventListeners = (element, events, func) => {
-  events.forEach(event => {
+  events.forEach((event) => {
     element.addEventListener(event, func);
   });
 };
@@ -58,9 +50,9 @@ export default class Chart {
       left: 30,
       right: 50,
       top: 20,
-      bottom: 40
+      bottom: 40,
     },
-    actions = {}
+    actions = {},
   }) {
     this.actions = actions;
     this.canvas = {
@@ -68,7 +60,7 @@ export default class Chart {
       context: canvas.getContext('2d'),
       isCanvas:
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
-        canvas.tagName.toLowerCase() === 'canvas'
+        canvas.tagName.toLowerCase() === 'canvas',
     };
     this.data = data;
     this.settings = {
@@ -76,20 +68,20 @@ export default class Chart {
         offset: 0,
         limit: {
           value: 100,
-          min: 10
-        }
+          min: 10,
+        },
       },
       offset: { ...offset },
       indicator: {
         enable: true,
         styles: {
           color: '#27ca5d',
-          width: 3
+          width: 3,
         },
         animation: {
           time: 1000,
-          scaleTo: 5
-        }
+          scaleTo: 5,
+        },
       },
       line: {
         styles: {
@@ -98,108 +90,112 @@ export default class Chart {
           lineGradient: {
             points: [
               {
-                color: '#954ce9'
+                color: '#954ce9',
               },
               {
-                color: '#24c1ed'
-              }
+                color: '#24c1ed',
+              },
             ],
-            enable: true
+            enable: true,
           },
           backgroundGradient: {
             points: [
               {
-                color: 'rgba(149, 76, 233, 0.17)'
+                color: 'rgba(149, 76, 233, 0.17)',
               },
               {
-                color: 'rgba(149, 76, 233, 0)'
-              }
+                color: 'rgba(149, 76, 233, 0)',
+              },
             ],
-            enable: true
-          }
+            enable: true,
+          },
         },
-        offset: { ...offset }
+        offset: { ...offset },
       },
       view: {
         styles: {
-          background: '#1a1e30'
-        }
+          background: '#1a1e30',
+        },
       },
       target: {
         enable: true,
         coords: {
           x: 0,
-          y: 0
+          y: 0,
         },
         styles: {
           line: {
             color: '#6f7dab',
             width: 1,
             horizontal: {
-              enable: true
+              enable: true,
             },
             vertical: {
-              enable: true
-            }
+              enable: true,
+            },
           },
           panel: {
             background: '#6f7dab',
-            color: '#fff'
+            color: '#fff',
           },
           points: [
             {
               width: 10,
               background: 'transparent',
               strokeColor: '#6f7dab',
-              strokeWidth: 1
+              strokeWidth: 1,
             },
             {
               width: 4,
               background: '#24c1ed',
-              strokeColor: 'transparent'
-            }
-          ]
-        }
+              strokeColor: 'transparent',
+            },
+          ],
+        },
       },
       grid: {
         enable: true,
         steps: {
           x: 10,
-          y: 5
+          y: 5,
         },
         styles: {
           background: '',
           color: '#2b2a49',
-          width: 1
-        }
+          width: 1,
+        },
       },
       timeLine: {
         enable: true,
         resize: true,
         mousewheel: {
           enable: true,
-          speed: 1
+          speed: 1,
         },
         count: 5,
         styles: {
-          color: '#6f7dab'
-        }
+          color: '#6f7dab',
+        },
       },
       valuesLine: {
         enable: true,
         resize: {
           enable: true,
           topMin: 80,
-          bottomMin: 80
+          bottomMin: 80,
         },
         count: 10,
         digits: 2,
         styles: {
-          color: '#6f7dab'
+          color: '#6f7dab',
         },
-        overflowValues: false
+        overflowValues: false,
       },
-      timeStamp: +new Date()
+      timeFormat: {
+        line: 'hh:ii:ss',
+        current: 'hh:ii:ss',
+      },
+      timeStamp: +new Date(),
     };
     this.setSettings(settings);
     this.init();
@@ -238,7 +234,7 @@ export default class Chart {
     if (data.offset) data.offset++;
     points.push({
       value,
-      time
+      time,
     });
   }
   setPoint(index, { value, time }) {
@@ -297,15 +293,15 @@ export default class Chart {
       all: {
         points: all,
         max,
-        min
+        min,
       },
       draw: {
         points: draw,
         max: drawMax,
-        min: drawMin
+        min: drawMin,
       },
       last: all[all.length - 1],
-      first: all[0]
+      first: all[0],
     };
     return type && result[type] ? result[type] : result;
   }
@@ -316,7 +312,7 @@ export default class Chart {
         lineView,
         lineTop,
         lineBottom,
-        lineHeight
+        lineHeight,
       } = this.getLineDrawCoords(),
       lineLastPoint = lineStart,
       pointsLength = points.length - 1;
@@ -346,7 +342,7 @@ export default class Chart {
         lineEnd,
         lineTop,
         lineBottom,
-        lineHeight
+        lineHeight,
       } = this.getLineDrawCoords(),
       y,
       x = element.clientWidth - (offset.right || 0);
@@ -362,7 +358,7 @@ export default class Chart {
     }
     return {
       x,
-      y
+      y,
     };
   }
   drawIndicator() {
@@ -426,7 +422,7 @@ export default class Chart {
       lineView,
       lineTop,
       lineBottom,
-      lineHeight
+      lineHeight,
     };
   }
   findPointByX(x) {
@@ -451,10 +447,10 @@ export default class Chart {
         lineView,
         lineTop,
         lineBottom,
-        lineHeight
+        lineHeight,
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
-      { timeLine, timeStamp, offset } = settings,
+      { timeLine, timeStamp, offset, timeFormat } = settings,
       { enable, count, styles } = timeLine,
       { element, context } = canvas;
     if (!enable) return;
@@ -470,7 +466,10 @@ export default class Chart {
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
-        generateDate(point && point.time ? point.time : timeStamp),
+        generateDate(
+          point && point.time ? point.time : timeStamp,
+          timeFormat.line
+        ),
         x ? x : 0,
         element.clientHeight - offset.bottom / 2
       );
@@ -484,7 +483,7 @@ export default class Chart {
         lineView,
         lineTop,
         lineBottom,
-        lineHeight
+        lineHeight,
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
       { valuesLine, line, offset, view } = settings,
@@ -499,38 +498,38 @@ export default class Chart {
     if (min === max) {
       valuesArray.push({
         text: max,
-        y: yMiddle
+        y: yMiddle,
       });
       let topCount = (yMiddle - line.offset.top) / yStep,
         bottomCount = (yMiddle - line.offset.top) / yStep;
       for (let i = 1; i <= topCount; i++) {
         valuesArray.push({
           text: max + max * i,
-          y: yMiddle - yStep * i
+          y: yMiddle - yStep * i,
         });
       }
       for (let i = 1; i <= bottomCount; i++) {
         valuesArray.push({
           text: max - max * i,
-          y: yMiddle + yStep * i
+          y: yMiddle + yStep * i,
         });
       }
     } else {
       valuesArray.push({
         text: max,
-        y: lineTop
+        y: lineTop,
       });
       let valueStep = (max - min) / (count - 1);
       for (let i = 1; i <= count - 2; i++) {
         valuesArray.push({
           text: max - valueStep * i,
-          y: yStart
+          y: yStart,
         });
         yStart += yStep;
       }
       valuesArray.push({
         text: min,
-        y: lineBottom
+        y: lineBottom,
       });
     }
     if (
@@ -540,19 +539,19 @@ export default class Chart {
       let valueStep = (max - min) / (count - 1),
         topValue = Math.max.apply(
           null,
-          valuesArray.map(val => val.text)
+          valuesArray.map((val) => val.text)
         ),
         topY = Math.min.apply(
           null,
-          valuesArray.map(val => val.y)
+          valuesArray.map((val) => val.y)
         ),
         bottomValue = Math.min.apply(
           null,
-          valuesArray.map(val => val.text)
+          valuesArray.map((val) => val.text)
         ),
         bottomY = Math.max.apply(
           null,
-          valuesArray.map(val => val.y)
+          valuesArray.map((val) => val.y)
         ),
         topCount = Math.round((line.offset.top - offset.top) / yStep),
         bottomCount = Math.round((line.offset.bottom - offset.bottom) / yStep);
@@ -562,13 +561,13 @@ export default class Chart {
       for (let i = 1; i <= topCount; i++) {
         valuesArray.push({
           text: topValue + valueStep * i,
-          y: topY - yStep * i
+          y: topY - yStep * i,
         });
       }
       for (let i = 1; i <= bottomCount; i++) {
         valuesArray.push({
           text: bottomValue - valueStep * i,
-          y: bottomY + yStep * i
+          y: bottomY + yStep * i,
         });
       }
     }
@@ -693,7 +692,7 @@ export default class Chart {
   }
   drawTarget() {
     let { canvas, settings, actions } = this,
-      { target, offset, valuesLine, timeStamp } = settings,
+      { target, offset, valuesLine, timeStamp, timeFormat } = settings,
       { styles, coords } = target,
       { x, y } = coords,
       { element, context } = canvas;
@@ -703,7 +702,7 @@ export default class Chart {
     if (!currentPoint) return;
     if (actions.mouseOverPoint) actions.mouseOverPoint(currentPoint);
     //draw point
-    styles.points.forEach(point => {
+    styles.points.forEach((point) => {
       context.beginPath();
       context.strokeStyle = point.strokeColor;
       context.lineWidth = point.strokeWidth;
@@ -754,24 +753,34 @@ export default class Chart {
         height: 20,
         x: element.clientWidth - offset.right,
         y: currentPoint.y - 20 / 2,
-        text: currentPoint.value.toFixed(valuesLine.digits || 2)
+        text: currentPoint.value.toFixed(valuesLine.digits || 2),
       };
     }
     if (verticalEnable) {
+      let date = generateDate(
+          currentPoint && currentPoint.time ? currentPoint.time : timeStamp,
+          timeFormat.current
+        ),
+        width = date.length * 6 + 20,
+        x = currentPoint.x - width / 2;
+      if(x < 0){
+        x = 0;
+      }
+      if(x + width > element.clientWidth){
+        x = element.clientWidth - width;
+      }
       panels.bottom = {
         background: styles.panel.background,
         color: styles.panel.color,
-        width: 80,
+        width,
         height: offset.bottom,
-        x: currentPoint.x - 80 / 2,
+        x,
         y: element.clientHeight - offset.bottom,
-        text: generateDate(
-          currentPoint && currentPoint.time ? currentPoint.time : timeStamp
-        )
+        text: date,
       };
     }
 
-    Object.values(panels).forEach(panel => {
+    Object.values(panels).forEach((panel) => {
       context.strokeStyle = context.fillStyle = panel.background;
       context.beginPath();
       context.rect(panel.x, panel.y, panel.width, panel.height);
@@ -872,10 +881,10 @@ export default class Chart {
       targetClear = () => {
         target.coords = {
           x: false,
-          y: false
+          y: false,
         };
       },
-      stopFunc = e => {
+      stopFunc = (e) => {
         pushed = false;
         x = 0;
         y = 0;
@@ -883,11 +892,11 @@ export default class Chart {
       },
       isTouch = 'ontouchstart' in document.documentElement;
 
-    document.addEventListener('gesturestart', function(e) {
+    document.addEventListener('gesturestart', function (e) {
       e.preventDefault();
     });
 
-    window.addEventListener('resize', e => {
+    window.addEventListener('resize', (e) => {
       let { settings } = this,
         { line, offset, valuesLine } = settings,
         elementOffset = element.getBoundingClientRect(),
@@ -921,15 +930,15 @@ export default class Chart {
         stopFunc();
         targetClear();
       });
-      element.addEventListener('mousedown', e => {
+      element.addEventListener('mousedown', (e) => {
         x = e.clientX;
         y = e.clientY;
         pushed = {
           x,
-          y
+          y,
         };
       });
-      element.addEventListener('mousewheel', e => {
+      element.addEventListener('mousewheel', (e) => {
         let up = e.deltaY,
           { data, timeLine } = settings,
           { mousewheel } = timeLine,
@@ -942,7 +951,7 @@ export default class Chart {
         }
         this.setPointsLimit(nextLimit);
       });
-      element.addEventListener('mousemove', e => {
+      element.addEventListener('mousemove', (e) => {
         let { settings } = this,
           { valuesLine, timeLine, data, line, offset } = settings,
           { points } = this.getPoints('all'),
@@ -962,7 +971,7 @@ export default class Chart {
           }
           target.coords = {
             x: e.clientX - elementOffset.left,
-            y: e.clientY - elementOffset.top
+            y: e.clientY - elementOffset.top,
           };
         }
 
@@ -1080,24 +1089,24 @@ export default class Chart {
         stopFunc();
         targetClear();
       });
-      element.addEventListener('touchstart', e => {
+      element.addEventListener('touchstart', (e) => {
         let touches = e.touches,
           elementOffset = element.getBoundingClientRect(),
           touch = touches[0];
         if (touches.length === 1) {
           target.coords = {
             x: touch.clientX - elementOffset.left,
-            y: touch.clientY - elementOffset.top
+            y: touch.clientY - elementOffset.top,
           };
         }
         x = touch.clientX;
         y = touch.clientY;
         pushed = {
           x,
-          y
+          y,
         };
       });
-      element.addEventListener('touchmove', e => {
+      element.addEventListener('touchmove', (e) => {
         let { settings } = this,
           { valuesLine, timeLine, data, line, offset } = settings,
           { points } = this.getPoints('all'),
@@ -1116,7 +1125,7 @@ export default class Chart {
           ) {
             target.coords = {
               x: touch.clientX - elementOffset.left,
-              y: touch.clientY - elementOffset.top
+              y: touch.clientY - elementOffset.top,
             };
           }
           //line view
