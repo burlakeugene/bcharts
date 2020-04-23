@@ -179,6 +179,7 @@ export default class Chart {
       },
       valuesLine: {
         enable: true,
+        position: 'right',
         resize: {
           enable: true,
           topMin: 80,
@@ -487,7 +488,7 @@ export default class Chart {
       } = this.getLineDrawCoords(),
       { canvas, settings } = this,
       { valuesLine, line, offset, view } = settings,
-      { count, enable, digits, styles, overflowValues } = valuesLine,
+      { count, enable, digits, styles, overflowValues, position } = valuesLine,
       { element, context } = canvas,
       valuesArray = [];
     if (!enable) return;
@@ -579,7 +580,9 @@ export default class Chart {
       context.textBaseline = 'middle';
       context.fillText(
         value.text.toFixed(digits),
-        element.clientWidth - offset.right / 2,
+        position === 'left'
+          ? offset.left / 2
+          : element.clientWidth - offset.right / 2,
         value.y
       );
     }
@@ -749,9 +752,12 @@ export default class Chart {
       panels.right = {
         background: styles.panel.background,
         color: styles.panel.color,
-        width: offset.right,
+        width: valuesLine.position === 'left' ? offset.left : offset.right,
         height: 20,
-        x: element.clientWidth - offset.right,
+        x:
+          valuesLine.position === 'left'
+            ? 0
+            : element.clientWidth - offset.right,
         y: currentPoint.y - 20 / 2,
         text: currentPoint.value.toFixed(valuesLine.digits || 2),
       };
@@ -763,10 +769,10 @@ export default class Chart {
         ),
         width = date.length * 6 + 20,
         x = currentPoint.x - width / 2;
-      if(x < 0){
+      if (x < 0) {
         x = 0;
       }
-      if(x + width > element.clientWidth){
+      if (x + width > element.clientWidth) {
         x = element.clientWidth - width;
       }
       panels.bottom = {
@@ -1007,7 +1013,10 @@ export default class Chart {
         if (
           valuesLine.enable &&
           valuesLine.resize.enable &&
-          e.clientX >= elementOffset.left + elementOffset.width - offset.right
+          (valuesLine.position === 'left'
+            ? e.clientX < offset.left
+            : e.clientX >=
+              elementOffset.left + elementOffset.width - offset.right)
         ) {
           element.style.cursor = 'row-resize';
           if (pushed) {
