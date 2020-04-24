@@ -72,17 +72,6 @@ export default class Chart {
         },
       },
       offset: { ...offset },
-      indicator: {
-        enable: true,
-        styles: {
-          color: '#27ca5d',
-          width: 3,
-        },
-        animation: {
-          time: 1000,
-          scaleTo: 5,
-        },
-      },
       line: {
         styles: {
           color: '#ffffff',
@@ -199,13 +188,38 @@ export default class Chart {
         styles: {
           panel: {
             color: '#ffffff',
-            background: '#27ca5d',
+            background: '#954ce9',
             height: 20,
           },
           line: {
-            color: '#27ca5d',
-            dashed: true,
+            color: '#954ce9',
+            gradient: {
+              enable: true,
+              points: [
+                {
+                  color: '#24c1ed',
+                },
+                {
+                  color: '#954ce9',
+                },
+              ],
+            },
+            dash: {
+              enable: true,
+              type: [10, 5],
+            },
           },
+        },
+      },
+      indicator: {
+        enable: true,
+        styles: {
+          color: '#27ca5d',
+          width: 3,
+        },
+        animation: {
+          time: 1000,
+          scaleTo: 5,
         },
       },
       timeFormat: {
@@ -272,8 +286,8 @@ export default class Chart {
     this.drawValues();
     this.drawTime();
     this.drawTarget();
-    this.drawIndicator();
     this.drawCurrentValue();
+    this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
   getPoints(type) {
@@ -430,10 +444,25 @@ export default class Chart {
       textY = y,
       lineY = y,
       lineXStart = offset.left,
-      lineXEnd = element.clientWidth - offset.right;
+      lineXEnd = element.clientWidth - offset.right,
+      lineColor = styles.line.color;
 
-    context.strokeStyle = context.fillStyle = styles.line.color;
+    if (styles.line.gradient && styles.line.gradient.enable) {
+      let gradientPoints = styles.line.gradient.points || [];
+      lineColor = context.createLinearGradient(lineXStart, 0, lineXEnd, 0);
+      if (gradientPoints.length === 1) gradientPoints.push(gradientPoints[0]);
+      gradientPoints.forEach((gradientPoint, index) => {
+        let { stop, color } = gradientPoint;
+        if (!stop && stop !== 0)
+          stop = (1 / (gradientPoints.length - 1)) * index;
+        lineColor.addColorStop(stop, color);
+      });
+    }
+    context.strokeStyle = context.fillStyle = lineColor;
     context.beginPath();
+    if (styles.line.dash && styles.line.dash.enable && styles.line.dash.type) {
+      context.setLineDash(styles.line.dash.type);
+    }
     context.lineTo(lineXStart, lineY);
     context.lineTo(lineXEnd, lineY);
     context.stroke();
