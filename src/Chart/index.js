@@ -193,6 +193,7 @@ export default class Chart {
           },
           line: {
             color: '#954ce9',
+            width: 1,
             gradient: {
               enable: true,
               points: [
@@ -285,8 +286,8 @@ export default class Chart {
     this.drawLine();
     this.drawValues();
     this.drawTime();
-    this.drawTarget();
     this.drawCurrentValue();
+    this.drawTarget();
     this.drawIndicator();
     requestAnimationFrame(this.render.bind(this));
   }
@@ -377,7 +378,9 @@ export default class Chart {
         lineHeight,
       } = this.getLineDrawCoords(),
       y,
-      x = element.clientWidth - (offset.right || 0);
+      x = element.clientWidth - (offset.right || 0),
+      overflowUp = false,
+      overflowDown = false;
     if (last) {
       y =
         lineTop +
@@ -385,12 +388,20 @@ export default class Chart {
         lineHeight *
           (((last.value - draw.min) * 100) / (draw.max - draw.min) / 100);
       if (!y) y = lineHeight / 2 + lineTop;
-      if (y > lineBottom) y = lineBottom;
-      if (y < lineTop) y = lineTop;
+      if (y > lineBottom) {
+        y = lineBottom;
+        overflowDown = true;
+      }
+      if (y < lineTop) {
+        y = lineTop;
+        overflowUp = true;
+      }
     }
     return {
       x,
       y,
+      overflowUp,
+      overflowDown,
     };
   }
   drawIndicator() {
@@ -432,7 +443,7 @@ export default class Chart {
       { context, element } = canvas;
     if (!enable) return;
     let last = this.getPoints('last'),
-      { y } = this.getIndicatorCoords(),
+      { y, overflowDown, overflowUp } = this.getIndicatorCoords(),
       panelY = y - styles.panel.height / 2,
       panelX = position !== 'right' ? 0 : element.clientWidth - offset.right,
       panelWidth = position !== 'right' ? offset.left : offset.right,
@@ -447,26 +458,34 @@ export default class Chart {
       lineXEnd = element.clientWidth - offset.right,
       lineColor = styles.line.color;
 
-    if (styles.line.gradient && styles.line.gradient.enable) {
-      let gradientPoints = styles.line.gradient.points || [];
-      lineColor = context.createLinearGradient(lineXStart, 0, lineXEnd, 0);
-      if (gradientPoints.length === 1) gradientPoints.push(gradientPoints[0]);
-      gradientPoints.forEach((gradientPoint, index) => {
-        let { stop, color } = gradientPoint;
-        if (!stop && stop !== 0)
-          stop = (1 / (gradientPoints.length - 1)) * index;
-        lineColor.addColorStop(stop, color);
-      });
+    if (!overflowUp && !overflowDown) {
+      if (styles.line.gradient && styles.line.gradient.enable) {
+        let gradientPoints = styles.line.gradient.points || [];
+        lineColor = context.createLinearGradient(lineXStart, 0, lineXEnd, 0);
+        if (gradientPoints.length === 1) gradientPoints.push(gradientPoints[0]);
+        gradientPoints.forEach((gradientPoint, index) => {
+          let { stop, color } = gradientPoint;
+          if (!stop && stop !== 0)
+            stop = (1 / (gradientPoints.length - 1)) * index;
+          lineColor.addColorStop(stop, color);
+        });
+      }
+      context.save();
+      context.lineWidth = styles.line.width;
+      context.strokeStyle = context.fillStyle = lineColor;
+      context.beginPath();
+      if (
+        styles.line.dash &&
+        styles.line.dash.enable &&
+        styles.line.dash.type
+      ) {
+        context.setLineDash(styles.line.dash.type);
+      }
+      context.lineTo(lineXStart, lineY);
+      context.lineTo(lineXEnd, lineY);
+      context.stroke();
+      context.restore();
     }
-    context.strokeStyle = context.fillStyle = lineColor;
-    context.beginPath();
-    if (styles.line.dash && styles.line.dash.enable && styles.line.dash.type) {
-      context.setLineDash(styles.line.dash.type);
-    }
-    context.lineTo(lineXStart, lineY);
-    context.lineTo(lineXEnd, lineY);
-    context.stroke();
-
     context.strokeStyle = context.fillStyle = styles.panel.background;
     context.beginPath();
     context.rect(panelX, panelY, panelWidth, panelHeight);
