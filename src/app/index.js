@@ -16,9 +16,6 @@ window.addEventListener('load', () => {
           mouseLeaveLine: () => {},
         },
         settings: {
-          valuesLine: {
-            position: 'right'
-          },
           timeFormat: {
             line: 'hh:ii:ss',
             current: 'hh:mm:ss',

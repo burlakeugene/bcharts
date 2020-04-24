@@ -192,6 +192,22 @@ export default class Chart {
         },
         overflowValues: false,
       },
+      currentValue: {
+        enable: true,
+        position: 'right',
+        digits: 2,
+        styles: {
+          panel: {
+            color: '#ffffff',
+            background: '#27ca5d',
+            height: 20,
+          },
+          line: {
+            color: '#27ca5d',
+            dashed: true,
+          },
+        },
+      },
       timeFormat: {
         line: 'hh:ii:ss',
         current: 'hh:ii:ss',
@@ -257,6 +273,7 @@ export default class Chart {
     this.drawTime();
     this.drawTarget();
     this.drawIndicator();
+    this.drawCurrentValue();
     requestAnimationFrame(this.render.bind(this));
   }
   getPoints(type) {
@@ -393,6 +410,45 @@ export default class Chart {
     context.fillStyle = styles.color;
     context.fill();
     context.stroke();
+  }
+  drawCurrentValue() {
+    let { settings, canvas } = this,
+      { currentValue, offset } = settings,
+      { styles, enable, digits, position } = currentValue,
+      { context, element } = canvas;
+    if (!enable) return;
+    let last = this.getPoints('last'),
+      { y } = this.getIndicatorCoords(),
+      panelY = y - styles.panel.height / 2,
+      panelX = position !== 'right' ? 0 : element.clientWidth - offset.right,
+      panelWidth = position !== 'right' ? offset.left : offset.right,
+      panelHeight = styles.panel.height,
+      textX =
+        position !== 'right'
+          ? offset.left / 2
+          : element.clientWidth - offset.right / 2,
+      textY = y,
+      lineY = y,
+      lineXStart = offset.left,
+      lineXEnd = element.clientWidth - offset.right;
+
+    context.strokeStyle = context.fillStyle = styles.line.color;
+    context.beginPath();
+    context.lineTo(lineXStart, lineY);
+    context.lineTo(lineXEnd, lineY);
+    context.stroke();
+
+    context.strokeStyle = context.fillStyle = styles.panel.background;
+    context.beginPath();
+    context.rect(panelX, panelY, panelWidth, panelHeight);
+    context.fill();
+    context.stroke();
+
+    context.font = '100 12px arial';
+    context.fillStyle = styles.panel.color;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText((last.value || 0).toFixed(digits), textX, textY);
   }
   drawBackground() {
     let { canvas, settings } = this,
