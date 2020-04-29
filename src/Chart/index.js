@@ -144,14 +144,18 @@ export default class Chart {
       },
       grid: {
         enable: true,
-        steps: {
-          x: 10,
-          y: 5,
-        },
         styles: {
           background: '',
           color: '#2b2a49',
-          width: 1,
+          width: 1
+        },
+        horizontal: {
+          step: 4,
+          enable: true
+        },
+        vertical: {
+          step: 10,
+          enable: true
         },
       },
       timeLine: {
@@ -205,10 +209,7 @@ export default class Chart {
                 },
               ],
             },
-            dash: {
-              enable: true,
-              type: [10, 5],
-            },
+            dash: [10, 5],
           },
         },
       },
@@ -474,12 +475,8 @@ export default class Chart {
       context.lineWidth = styles.line.width;
       context.strokeStyle = context.fillStyle = lineColor;
       context.beginPath();
-      if (
-        styles.line.dash &&
-        styles.line.dash.enable &&
-        styles.line.dash.type
-      ) {
-        context.setLineDash(styles.line.dash.type);
+      if (styles.line.dash) {
+        context.setLineDash(styles.line.dash);
       }
       context.lineTo(lineXStart, lineY);
       context.lineTo(lineXEnd, lineY);
@@ -763,6 +760,7 @@ export default class Chart {
       context.stroke();
     }
     if (grid.enable) {
+      context.save();
       context.beginPath();
       context.lineJoin = 'miter';
       context.lineWidth = width;
@@ -786,6 +784,9 @@ export default class Chart {
       context.lineJoin = 'miter';
       context.lineWidth = grid.styles.width;
       context.strokeStyle = grid.styles.color;
+      if (grid.styles.dash) {
+        context.setLineDash(grid.styles.dash);
+      }
       context.lineTo(0 + offset.left, 0 + offset.top);
       context.lineTo(0 + offset.left, element.clientHeight - offset.bottom);
       context.lineTo(
@@ -795,6 +796,7 @@ export default class Chart {
       context.lineTo(element.clientWidth - offset.right, 0 + offset.top);
       context.closePath();
       context.stroke();
+      context.restore();
     }
   }
   drawTarget() {
@@ -911,55 +913,99 @@ export default class Chart {
     let { canvas, settings } = this,
       { grid, offset } = settings,
       { element, context } = canvas,
-      { enable, steps, styles, type } = grid;
+      { enable, horizontal, vertical, styles } = grid;
     if (!enable) return;
     let left = 0 + offset.left,
       right = element.clientWidth - offset.right - offset.left,
       top = 0 + offset.top,
       bottom = element.clientHeight - offset.bottom - offset.top;
+    context.save();
     context.lineWidth = styles.width;
     context.strokeStyle = styles.color;
     context.fillStyle = styles.background;
     context.rect(left, top, right, bottom);
     context.fill();
+    context.restore();
 
-    let xArray = [],
-      yArray = [],
-      isPx = type === 'px',
-      xStep = (element.clientWidth - offset.right - offset.left) / steps.x,
-      xStart = 0 + offset.left,
-      yStep = (element.clientHeight - offset.top - offset.bottom) / steps.y,
-      yStart = 0 + offset.top;
-    if (isPx) {
-      for (let i = 1; i < xStep; i++) {
-        let x = xStart + i * steps.x;
-        xArray.push(x);
+    //horizontal lines
+    if (horizontal && horizontal.enable) {
+      context.save();
+      let horizonalArray = [],
+        horizontalStep =
+          (element.clientHeight - offset.top - offset.bottom) /
+          (horizontal.step + 1),
+        horizontalStepPx =
+          (element.clientHeight - offset.top - offset.bottom) / horizontal.step,
+        yStart = offset.top,
+        horizontalStyles = {
+          ...styles,
+          ...(horizontal.styles || {}),
+        },
+        horizontalType = horizontal.type || grid.type;
+      if (horizontalType === 'px') {
+        for (let i = 1; i < horizontalStepPx; i++) {
+          let y = yStart + i * horizontal.step;
+          horizonalArray.push(y);
+        }
+      } else {
+        for (let i = 1; i < horizontal.step + 1; i++) {
+          let y = yStart + i * horizontalStep;
+          horizonalArray.push(y);
+        }
       }
-      for (let i = 1; i < yStep; i++) {
-        let y = yStart + i * steps.y;
-        yArray.push(y);
+      context.lineWidth = horizontalStyles.width;
+      context.strokeStyle = horizontalStyles.color;
+      if (horizontalStyles.dash) {
+        context.setLineDash(horizontalStyles.dash);
       }
-    } else {
-      for (let i = 1; i < steps.x; i++) {
-        let x = xStart + i * xStep;
-        xArray.push(x);
+      for (let i = 0; i <= horizonalArray.length - 1; i++) {
+        context.beginPath();
+        context.lineTo(0 + offset.left, horizonalArray[i]);
+        context.lineTo(element.clientWidth - offset.right, horizonalArray[i]);
+        context.stroke();
       }
-      for (let i = 1; i < steps.y; i++) {
-        let y = yStart + i * yStep;
-        yArray.push(y);
-      }
+      context.restore();
     }
-    for (let i = 0; i <= xArray.length - 1; i++) {
-      context.beginPath();
-      context.lineTo(xArray[i], 0 + offset.top);
-      context.lineTo(xArray[i], element.clientHeight - offset.bottom);
-      context.stroke();
-    }
-    for (let i = 0; i <= yArray.length - 1; i++) {
-      context.beginPath();
-      context.lineTo(0 + offset.left, yArray[i]);
-      context.lineTo(element.clientWidth - offset.right, yArray[i]);
-      context.stroke();
+
+    //verical lines
+    if (vertical && vertical.enable) {
+      context.save();
+      let verticalArray = [],
+        verticalStep =
+          (element.clientWidth - offset.right - offset.left) /
+          (vertical.step + 1),
+        verticalStepPx =
+          (element.clientWidth - offset.right - offset.left) / vertical.step,
+        xStart = offset.left,
+        verticalStyles = {
+          ...styles,
+          ...(vertical.styles || {}),
+        },
+        verticalType = vertical.type || grid.type;
+
+      if (verticalType === 'px') {
+        for (let i = 1; i < verticalStepPx; i++) {
+          let x = xStart + i * vertical.step;
+          verticalArray.push(x);
+        }
+      } else {
+        for (let i = 1; i < vertical.step + 1; i++) {
+          let x = xStart + i * verticalStep;
+          verticalArray.push(x);
+        }
+      }
+      context.lineWidth = verticalStyles.width;
+      context.strokeStyle = verticalStyles.color;
+      if (verticalStyles.dash) {
+        context.setLineDash(verticalStyles.dash);
+      }
+      for (let i = 0; i <= verticalArray.length - 1; i++) {
+        context.beginPath();
+        context.lineTo(verticalArray[i], 0 + offset.top);
+        context.lineTo(verticalArray[i], element.clientHeight - offset.bottom);
+        context.stroke();
+      }
+      context.restore();
     }
   }
   setPointsLimit(limit, resize = true) {

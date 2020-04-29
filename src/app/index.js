@@ -16,14 +16,35 @@ window.addEventListener('load', () => {
           mouseLeaveLine: () => {},
         },
         settings: {
-          timeFormat: {
-            line: 'hh:ii:ss',
-            current: 'hh:mm:ss',
+          offset: {
+            left: 50,
+            right: 30,
           },
           data: {
             limit: {
-              value: 200,
+              value: 100,
               min: 50,
+            },
+          },
+          valuesLine: {
+            position: 'left',
+          },
+          currentValue: {
+            position: 'left',
+            styles: {
+              line: {
+                dash: false,
+                gradient: {
+                  points: [
+                    {
+                      color: '#954ce9',
+                    },
+                    {
+                      color: '#27ca5d',
+                    },
+                  ],
+                },
+              },
             },
           },
         },
