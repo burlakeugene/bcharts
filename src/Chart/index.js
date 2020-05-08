@@ -14,6 +14,19 @@ Date.prototype.formatting = function (format) {
   return format;
 };
 
+CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  this.beginPath();
+  this.moveTo(x + r, y);
+  this.arcTo(x + w, y, x + w, y + h, r);
+  this.arcTo(x + w, y + h, x, y + h, r);
+  this.arcTo(x, y + h, x, y, r);
+  this.arcTo(x, y, x + w, y, r);
+  this.closePath();
+  return this;
+};
+
 const generateDate = (time, format = 'hh:ii:ss') => {
   let result = '';
   time = new Date(time);
@@ -106,40 +119,63 @@ export default class Chart {
           background: '#1a1e30',
         },
       },
-      target: {
+      targetValue: {
         enable: true,
         coords: {
           x: 0,
           y: 0,
         },
-        styles: {
-          line: {
-            color: '#6f7dab',
-            width: 1,
-            horizontal: {
-              enable: true,
+        target: {
+          enable: true,
+          styles: {
+            points: [
+              {
+                width: 10,
+                background: 'transparent',
+                strokeColor: '#6f7dab',
+                strokeWidth: 1,
+              },
+              {
+                width: 4,
+                background: '#24c1ed',
+                strokeColor: 'transparent',
+              },
+            ],
+          },
+        },
+        horizontalLine: {
+          enable: true,
+          styles: {
+            line: {
+              color: '#6f7dab',
+              width: 1,
             },
-            vertical: {
-              enable: true,
+            panel: {
+              background: '#6f7dab',
+              color: '#fff',
             },
           },
-          panel: {
-            background: '#6f7dab',
+        },
+        verticalLine: {
+          enable: true,
+          styles: {
+            line: {
+              color: '#6f7dab',
+              width: 1,
+            },
+            panel: {
+              background: '#6f7dab',
+              color: '#fff',
+            },
+          },
+        },
+        valueLabel: {
+          enable: true,
+          styles: {
             color: '#fff',
+            background: '#954ce9',
+            borderRadius: 2,
           },
-          points: [
-            {
-              width: 10,
-              background: 'transparent',
-              strokeColor: '#6f7dab',
-              strokeWidth: 1,
-            },
-            {
-              width: 4,
-              background: '#24c1ed',
-              strokeColor: 'transparent',
-            },
-          ],
         },
       },
       grid: {
@@ -147,15 +183,15 @@ export default class Chart {
         styles: {
           background: '',
           color: '#2b2a49',
-          width: 1
+          width: 1,
         },
         horizontal: {
           step: 4,
-          enable: true
+          enable: true,
         },
         vertical: {
           step: 10,
-          enable: true
+          enable: true,
         },
       },
       timeLine: {
@@ -801,63 +837,93 @@ export default class Chart {
   }
   drawTarget() {
     let { canvas, settings, actions } = this,
-      { target, offset, valuesLine, timeStamp, timeFormat } = settings,
-      { styles, coords } = target,
+      { targetValue, offset, valuesLine, timeStamp, timeFormat } = settings,
+      {
+        enable,
+        coords,
+        target,
+        horizontalLine,
+        verticalLine,
+        valueLabel,
+      } = targetValue,
       { x, y } = coords,
       { element, context } = canvas;
-    if (!target.enable || !x || !y) return;
+    if (!enable || !x || !y) return;
     let currentPoint = this.findPointByX(x),
       maxPointWidth = 0;
     if (!currentPoint) return;
     if (actions.mouseOverPoint) actions.mouseOverPoint(currentPoint);
+
     //draw point
-    styles.points.forEach((point) => {
-      context.beginPath();
-      context.strokeStyle = point.strokeColor;
-      context.lineWidth = point.strokeWidth;
-      context.fillStyle = point.background;
-      context.arc(currentPoint.x, currentPoint.y, point.width, 0, 2 * Math.PI);
-      context.fill();
-      context.stroke();
-      if (point.width && point.width > maxPointWidth)
-        maxPointWidth = point.width;
-    });
-
-    context.lineWidth = styles.line.width;
-    context.strokeStyle = styles.line.color;
-
-    let horizontalEnable =
-        !styles.line.horizontal || styles.line.horizontal.enable,
-      verticalEnable = !styles.line.vertical || styles.line.vertical.enable;
-
-    if (horizontalEnable) {
-      context.beginPath();
-      context.moveTo(0 + offset.left, currentPoint.y);
-      context.lineTo(currentPoint.x - maxPointWidth, currentPoint.y);
-      context.stroke();
-      context.beginPath();
-      context.moveTo(currentPoint.x + maxPointWidth, currentPoint.y);
-      context.lineTo(element.clientWidth - offset.right, currentPoint.y);
-      context.stroke();
+    if (target && target.enable) {
+      target.styles.points.forEach((point) => {
+        context.beginPath();
+        context.strokeStyle = point.strokeColor;
+        context.lineWidth = point.strokeWidth;
+        context.fillStyle = point.background;
+        context.arc(
+          currentPoint.x,
+          currentPoint.y,
+          point.width,
+          0,
+          2 * Math.PI
+        );
+        context.fill();
+        context.stroke();
+        if (point.width && point.width > maxPointWidth)
+          maxPointWidth = point.width;
+      });
     }
 
-    if (verticalEnable) {
-      context.beginPath();
-      context.moveTo(currentPoint.x, 0 + offset.top);
-      context.lineTo(currentPoint.x, currentPoint.y - maxPointWidth);
-      context.stroke();
-      context.beginPath();
-      context.moveTo(currentPoint.x, currentPoint.y + maxPointWidth);
-      context.lineTo(currentPoint.x, element.clientHeight - offset.bottom);
-      context.stroke();
+    // draw horizontal line
+    if (horizontalLine && horizontalLine.enable) {
+      context.save();
+      context.lineWidth = horizontalLine.styles.line.width;
+      context.strokeStyle = horizontalLine.styles.line.color;
+      if (currentPoint.x - maxPointWidth > offset.left) {
+        context.beginPath();
+        context.moveTo(0 + offset.left, currentPoint.y);
+        context.lineTo(currentPoint.x - maxPointWidth, currentPoint.y);
+        context.stroke();
+      }
+      if (currentPoint.x + maxPointWidth < element.clientWidth - offset.right) {
+        context.beginPath();
+        context.moveTo(currentPoint.x + maxPointWidth, currentPoint.y);
+        context.lineTo(element.clientWidth - offset.right, currentPoint.y);
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    // draw vertical line
+    if (verticalLine && verticalLine.enable) {
+      context.save();
+      context.lineWidth = verticalLine.styles.line.width;
+      context.strokeStyle = verticalLine.styles.line.color;
+      if (currentPoint.y - maxPointWidth > offset.top) {
+        context.beginPath();
+        context.moveTo(currentPoint.x, 0 + offset.top);
+        context.lineTo(currentPoint.x, currentPoint.y - maxPointWidth);
+        context.stroke();
+      }
+      if (
+        currentPoint.y + maxPointWidth <
+        element.clientHeight - offset.bottom
+      ) {
+        context.beginPath();
+        context.moveTo(currentPoint.x, currentPoint.y + maxPointWidth);
+        context.lineTo(currentPoint.x, element.clientHeight - offset.bottom);
+        context.stroke();
+        context.restore();
+      }
     }
 
     //draw panels
     let panels = {};
-    if (horizontalEnable) {
+    if (horizontalLine && horizontalLine.enable) {
       panels.right = {
-        background: styles.panel.background,
-        color: styles.panel.color,
+        background: horizontalLine.styles.panel.background,
+        color: horizontalLine.styles.panel.color,
         width: valuesLine.position === 'left' ? offset.left : offset.right,
         height: 20,
         x:
@@ -868,7 +934,7 @@ export default class Chart {
         text: currentPoint.value.toFixed(valuesLine.digits || 2),
       };
     }
-    if (verticalEnable) {
+    if (verticalLine && verticalLine.enable) {
       let date = generateDate(
           currentPoint && currentPoint.time ? currentPoint.time : timeStamp,
           timeFormat.current
@@ -882,8 +948,8 @@ export default class Chart {
         x = element.clientWidth - width;
       }
       panels.bottom = {
-        background: styles.panel.background,
-        color: styles.panel.color,
+        background: verticalLine.styles.panel.background,
+        color: verticalLine.styles.panel.color,
         width,
         height: offset.bottom,
         x,
@@ -908,7 +974,36 @@ export default class Chart {
         panel.y + panel.height / 2
       );
     });
+
+    //draw value label
+    if (valueLabel && valueLabel.enable) {
+      let text = currentPoint.value.toFixed(valuesLine.digits || 2),
+        width = text.length * 10,
+        height = 25,
+        left = currentPoint.x - width / 2,
+        top = currentPoint.y - height - maxPointWidth - 5;
+      if (top < 0) {
+        top = currentPoint.y + maxPointWidth + 5;
+      }
+      context.strokeStyle = context.fillStyle = valueLabel.styles.background;
+      context.beginPath();
+      context.roundRect(
+        left,
+        top,
+        width,
+        height,
+        valueLabel.styles.borderRadius
+      );
+      context.fill();
+      context.stroke();
+      context.font = '100 12px arial';
+      context.fillStyle = valueLabel.styles.color;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(text, left + width / 2, top + height / 2);
+    }
   }
+
   drawGrid() {
     let { canvas, settings } = this,
       { grid, offset } = settings,
@@ -1029,13 +1124,13 @@ export default class Chart {
   }
   listeners() {
     let { canvas, settings, actions } = this,
-      { target } = settings,
+      { targetValue } = settings,
       { element } = canvas,
       pushed = false,
       x = 0,
       y = 0,
       targetClear = () => {
-        target.coords = {
+        targetValue.coords = {
           x: false,
           y: false,
         };
@@ -1122,10 +1217,10 @@ export default class Chart {
           e.clientY >= elementOffset.top + offset.top &&
           e.clientY <= elementOffset.bottom - offset.bottom
         ) {
-          if (target.enable) {
+          if (targetValue.enable) {
             element.style.cursor = 'crosshair';
           }
-          target.coords = {
+          targetValue.coords = {
             x: e.clientX - elementOffset.left,
             y: e.clientY - elementOffset.top,
           };
@@ -1253,7 +1348,7 @@ export default class Chart {
           elementOffset = element.getBoundingClientRect(),
           touch = touches[0];
         if (touches.length === 1) {
-          target.coords = {
+          targetValue.coords = {
             x: touch.clientX - elementOffset.left,
             y: touch.clientY - elementOffset.top,
           };
