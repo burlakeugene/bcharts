@@ -1377,7 +1377,7 @@ export default class Chart {
             touch.clientY >= elementOffset.top + offset.top &&
             touch.clientY <= elementOffset.bottom - offset.bottom
           ) {
-            target.coords = {
+            targetValue.coords = {
               x: touch.clientX - elementOffset.left,
               y: touch.clientY - elementOffset.top,
             };
