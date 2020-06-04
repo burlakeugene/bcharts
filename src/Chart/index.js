@@ -880,13 +880,19 @@ export default class Chart {
       context.save();
       context.lineWidth = horizontalLine.styles.line.width;
       context.strokeStyle = horizontalLine.styles.line.color;
-      if (currentPoint.x - maxPointWidth > offset.left) {
+      if (
+        currentPoint.x - maxPointWidth > offset.left &&
+        !horizontalLine.leftLineHidden
+      ) {
         context.beginPath();
         context.moveTo(0 + offset.left, currentPoint.y);
         context.lineTo(currentPoint.x - maxPointWidth, currentPoint.y);
         context.stroke();
       }
-      if (currentPoint.x + maxPointWidth < element.clientWidth - offset.right) {
+      if (
+        currentPoint.x + maxPointWidth < element.clientWidth - offset.right &&
+        !horizontalLine.rightLineHidden
+      ) {
         context.beginPath();
         context.moveTo(currentPoint.x + maxPointWidth, currentPoint.y);
         context.lineTo(element.clientWidth - offset.right, currentPoint.y);
@@ -900,15 +906,18 @@ export default class Chart {
       context.save();
       context.lineWidth = verticalLine.styles.line.width;
       context.strokeStyle = verticalLine.styles.line.color;
-      if (currentPoint.y - maxPointWidth > offset.top) {
+      if (
+        currentPoint.y - maxPointWidth > offset.top &&
+        !verticalLine.topLineHidden
+      ) {
         context.beginPath();
         context.moveTo(currentPoint.x, 0 + offset.top);
         context.lineTo(currentPoint.x, currentPoint.y - maxPointWidth);
         context.stroke();
       }
       if (
-        currentPoint.y + maxPointWidth <
-        element.clientHeight - offset.bottom
+        currentPoint.y + maxPointWidth < element.clientHeight - offset.bottom &&
+        !verticalLine.bottomLineHidden
       ) {
         context.beginPath();
         context.moveTo(currentPoint.x, currentPoint.y + maxPointWidth);
@@ -980,12 +989,28 @@ export default class Chart {
       let text = currentPoint.value.toFixed(valuesLine.digits || 2),
         width = text.length * 10,
         height = 25,
+        leftCenter = currentPoint.x + 0.5,
+        topOffset = 10,
         left = currentPoint.x - width / 2,
-        top = currentPoint.y - height - maxPointWidth - 5;
+        invert = false,
+        top = currentPoint.y - height - maxPointWidth - topOffset;
       if (top < 0) {
-        top = currentPoint.y + maxPointWidth + 5;
+        invert = true;
+        top = currentPoint.y + maxPointWidth + topOffset;
       }
       context.strokeStyle = context.fillStyle = valueLabel.styles.background;
+      context.beginPath();
+      if (invert) {
+        context.moveTo(leftCenter, top - 5);
+        context.lineTo(leftCenter - 5, top);
+        context.lineTo(leftCenter + 5, top);
+      } else {
+        context.moveTo(leftCenter, top + height + 5);
+        context.lineTo(leftCenter - 5, top + height);
+        context.lineTo(leftCenter + 5, top + height);
+      }
+      context.fill();
+      context.stroke();
       context.beginPath();
       context.roundRect(
         left,

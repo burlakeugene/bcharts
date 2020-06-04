@@ -29,6 +29,17 @@ window.addEventListener('load', () => {
           valuesLine: {
             position: 'left',
           },
+          targetValue: {
+            horizontalLine: {
+              enable: false,
+            },
+            verticalLine: {
+              topLineHidden: true
+            },
+            valueLabel: {
+              // enable: false
+            },
+          },
           currentValue: {
             position: 'left',
             styles: {
