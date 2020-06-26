@@ -1147,6 +1147,10 @@ export default class Chart {
       }
     })();
   }
+  goToEnd() {
+    let { data } = this.settings;
+    data.offset = 0;
+  }
   listeners() {
     let { canvas, settings, actions } = this,
       { targetValue } = settings,
@@ -1213,6 +1217,9 @@ export default class Chart {
           x,
           y,
         };
+      });
+      element.addEventListener('dblclick', (e) => {
+        this.goToEnd();
       });
       element.addEventListener('mousewheel', (e) => {
         let up = e.deltaY,
