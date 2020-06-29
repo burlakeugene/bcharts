@@ -786,12 +786,12 @@ export default class Chart {
         fill.addColorStop(stop, color);
       });
       context.fillStyle = fill;
-      context.lineTo(lineStart, lineBottom);
+      context.lineTo(lineStart, lineBottom + width);
       for (let i = points.length - 1; i >= 0; i--) {
         let point = points[i];
         context.lineTo(point.x, point.y);
       }
-      context.lineTo(lineEnd, lineBottom);
+      context.lineTo(lineEnd, lineBottom + width);
       context.fill();
       context.stroke();
     }
@@ -1219,7 +1219,16 @@ export default class Chart {
         };
       });
       element.addEventListener('dblclick', (e) => {
-        this.goToEnd();
+        let { settings } = this,
+          { offset } = settings,
+          elementOffset = element.getBoundingClientRect();
+        if (
+          e.clientX >= elementOffset.left + offset.left + 1 &&
+          e.clientX <=
+            elementOffset.left + elementOffset.width - offset.right &&
+          e.clientY >= elementOffset.top + offset.top &&
+          e.clientY <= elementOffset.bottom - offset.bottom
+        ) this.goToEnd();
       });
       element.addEventListener('mousewheel', (e) => {
         let up = e.deltaY,
@@ -1291,7 +1300,7 @@ export default class Chart {
           valuesLine.enable &&
           valuesLine.resize.enable &&
           (valuesLine.position === 'left'
-            ? e.clientX < offset.left
+            ? e.clientX < elementOffset.left + offset.left
             : e.clientX >=
               elementOffset.left + elementOffset.width - offset.right)
         ) {

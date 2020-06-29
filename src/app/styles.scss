@@ -15,15 +15,20 @@ html {
   width: 100%;
 }
 
-.chart {
-  width: 100%;
+.charts{
   height: 100%;
+  font-size: 0;
+}
+
+.chart {
+  width: 50%;
+  height: 50%;
   user-select: none;
+  display: inline-block;
   canvas {
     height: 100%;
     width: 100%;
   }
-  
   div {
     position: absolute;
     top: 40px;
