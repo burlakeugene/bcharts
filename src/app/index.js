@@ -14,51 +14,7 @@ window.addEventListener('load', () => {
           mouseOverPoint: (point) => {},
           mouseEnterLine: () => {},
           mouseLeaveLine: () => {},
-        },
-        settings: {
-          offset: {
-            left: 50,
-            right: 30,
-          },
-          data: {
-            limit: {
-              value: 100,
-              min: 50,
-            },
-          },
-          valuesLine: {
-            position: 'left',
-          },
-          targetValue: {
-            horizontalLine: {
-              enable: false,
-            },
-            verticalLine: {
-              topLineHidden: true
-            },
-            valueLabel: {
-              // enable: false
-            },
-          },
-          currentValue: {
-            position: 'left',
-            styles: {
-              line: {
-                dash: false,
-                gradient: {
-                  points: [
-                    {
-                      color: '#954ce9',
-                    },
-                    {
-                      color: '#27ca5d',
-                    },
-                  ],
-                },
-              },
-            },
-          },
-        },
+        }
       });
 
     for (let i = 0; i <= 199; i++) {

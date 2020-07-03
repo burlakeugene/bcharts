@@ -245,7 +245,7 @@ export default class Chart {
                 },
               ],
             },
-            dash: [10, 5],
+            dash: [],
           },
         },
       },
@@ -444,10 +444,12 @@ export default class Chart {
   drawIndicator() {
     let { x, y } = this.getIndicatorCoords(),
       { settings, canvas } = this,
-      { indicator } = settings,
+      { indicator, data } = settings,
       { styles, animation, enable } = indicator,
       { context } = canvas;
-    if (!enable) return;
+    if(!enable || data.offset > 0){
+      return;
+    }
     context.strokeStyle = 'transparent';
     context.save();
     if (!this.indicatorAnimatedState || this.indicatorAnimatedState >= 1)
