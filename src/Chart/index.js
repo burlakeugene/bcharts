@@ -547,7 +547,7 @@ export default class Chart {
   }
   getLineDrawCoords() {
     let { canvas, settings } = this,
-      { line, grid } = settings,
+      { line, grid, data } = settings,
       { offset } = line,
       { element } = canvas,
       lineStart = element.clientWidth - offset.right,
