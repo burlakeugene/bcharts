@@ -5,7 +5,7 @@ const request = new Request(),
   url = new Url();
 window.addEventListener('load', () => {
   let charts = document.querySelectorAll('.chart');
-  charts.forEach((item) => {
+  charts.forEach((item, index) => {
     let div = item.querySelector('div'),
       canvas = item.querySelector('canvas'),
       chart = new Chart({
@@ -20,21 +20,29 @@ window.addEventListener('load', () => {
     for (let i = 0; i <= 199; i++) {
       chart.newPoint();
     }
-    setInterval(() => {
-      let index = chart.getData().length - 1,
-        point = chart.getData()[index];
-      chart.setPoint(index, {
-        value: point.value + Math.random() * (Math.random() > 0.5 ? 1 : -1),
-        time: +new Date(),
-      });
-    }, 500);
-    setInterval(() => {
-      let index = chart.getData().length - 1,
-        point = chart.getData()[index];
-      chart.newPoint({
-        value: point.value,
-        time: +new Date(),
-      });
-    }, 5000);
+    if(index === 0 || index === 1){
+      setInterval(() => {
+        let index = chart.getData().length - 1,
+          point = chart.getData()[index];
+        chart.setPoint(index, {
+          value: point.value + Math.random() * (Math.random() > 0.5 ? 1 : -1),
+          time: +new Date(),
+        });
+      }, 200);
+    }
+    if(index !== 0){
+      setInterval(() => {
+        let pointIndex = chart.getData().length - 1,
+          point = chart.getData()[pointIndex],
+          value = point.value;
+        if(index === 2 || index === 3){
+          value = value + Math.random() * (Math.random() > 0.5 ? 1 : -1);
+        }
+        chart.newPoint({
+          value,
+          time: +new Date(),
+        });
+      }, [0, 40, 100, 300][index]);
+    }
   });
 });
