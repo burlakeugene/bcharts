@@ -1151,15 +1151,7 @@ export default class Chart {
   }
   goToEnd() {
     let { data } = this.settings;
-    if(data.offset <= 0) return;
-    let stepTime = 17,
-      step = data.offset / stepTime;
-    this.toEndInterval = setInterval(() => {
-      if(data.offset <= 0)
-        clearInterval(this.toEndInterval);
-      else
-        data.offset = data.offset - step;
-    }, stepTime);
+    data.offset = 0;
   }
   listeners() {
     let { canvas, settings, actions } = this,
