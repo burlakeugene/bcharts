@@ -950,7 +950,7 @@ export default class Chart {
           currentPoint && currentPoint.time ? currentPoint.time : timeStamp,
           timeFormat.current
         ),
-        width = date.length * 6 + 20,
+        width = context.measureText(date).width + 20,
         x = currentPoint.x - width / 2;
       if (x < 0) {
         x = 0;
@@ -989,7 +989,7 @@ export default class Chart {
     //draw value label
     if (valueLabel && valueLabel.enable) {
       let text = currentPoint.value.toFixed(valuesLine.digits || 2),
-        width = text.length * 10,
+        width = context.measureText(text).width + 10,
         height = 25,
         leftCenter = currentPoint.x + 0.5,
         topOffset = 10,
