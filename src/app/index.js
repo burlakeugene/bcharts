@@ -1,8 +1,5 @@
 import Chart from '../package';
 import './styles.scss';
-import { Request, Url } from 'burlak';
-const request = new Request(),
-  url = new Url();
 window.addEventListener('load', () => {
   let charts = document.querySelectorAll('.chart');
   charts.forEach((item, index) => {
