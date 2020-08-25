@@ -6,7 +6,9 @@
     "url": "git+https://github.com/burlakeugene/bchart.git"
   },
   "keywords": [
-    "chart"
+    "chart",
+    "line",
+    "pie"
   ],
   "bugs": {
     "url": "https://github.com/burlakeugene/bchart/issues"

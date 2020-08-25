@@ -1,11 +1,10 @@
-import Chart from '../package';
+import { Line, Pie } from '../package';
 import './styles.scss';
 window.addEventListener('load', () => {
-  let charts = document.querySelectorAll('.chart');
-  charts.forEach((item, index) => {
-    let div = item.querySelector('div'),
-      canvas = item.querySelector('canvas'),
-      chart = new Chart({
+  let lineCharts = document.querySelectorAll('.chart-line');
+  lineCharts.forEach((item, index) => {
+    let canvas = item.querySelector('canvas'),
+      chart = new Line({
         canvas,
         actions: {
           mouseOverPoint: (point) => {},
@@ -41,5 +40,14 @@ window.addEventListener('load', () => {
         });
       }, [0, 40, 100, 300][index]);
     }
+  });
+  let pieCharts = document.querySelectorAll('.chart-pie');
+  pieCharts.forEach((item, index) => {
+    let canvas = item.querySelector('canvas'),
+      chart = new Pie({
+        canvas,
+        actions: {
+        }
+      });
   });
 });

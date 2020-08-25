@@ -1,2 +1,2 @@
-import Chart from '../Chart';
-export default Chart;
+import { Line, Pie } from '../Chart';
+export { Line, Pie };
