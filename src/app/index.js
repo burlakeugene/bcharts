@@ -10,13 +10,13 @@ window.addEventListener('load', () => {
           mouseOverPoint: (point) => {},
           mouseEnterLine: () => {},
           mouseLeaveLine: () => {},
-        }
+        },
       });
 
     for (let i = 0; i <= 199; i++) {
       chart.newPoint();
     }
-    if(index === 0 || index === 1){
+    if (index === 0 || index === 1) {
       setInterval(() => {
         let index = chart.getData().length - 1,
           point = chart.getData()[index];
@@ -26,12 +26,12 @@ window.addEventListener('load', () => {
         });
       }, 200);
     }
-    if(index !== 0){
+    if (index !== 0) {
       setInterval(() => {
         let pointIndex = chart.getData().length - 1,
           point = chart.getData()[pointIndex],
           value = point.value;
-        if(index === 2 || index === 3){
+        if (index === 2 || index === 3) {
           value = value + Math.random() * (Math.random() > 0.5 ? 1 : -1);
         }
         chart.newPoint({
@@ -46,13 +46,16 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Donut({
         canvas,
-        data: [{
-          value: 30,
-          label: 'First'
-        }, {
-          value: 20,
-          label: 'Second'
-        }]
+        data: [
+          {
+            value: 2,
+            label: 'First',
+          },
+          {
+            value: 2,
+            label: 'Second',
+          },
+        ],
       });
   });
 });

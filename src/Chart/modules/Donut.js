@@ -1,6 +1,6 @@
 import { generateRandomColor, generateDate, deepMerge } from '../common';
 
-export default class Pie {
+export default class Donut {
   constructor({
     canvas = false,
     data = [],
@@ -21,7 +21,7 @@ export default class Pie {
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
         canvas.tagName.toLowerCase() === 'canvas',
     };
-    this.data = this.prepareData(data);
+    this.data = data;
     this.settings = {
       offset: { ...offset },
       view: {
@@ -31,20 +31,21 @@ export default class Pie {
       },
       line: {
         styles: {
-          width: 20,
+          width: 60,
           color: '#fff',
-          background: 'transparent'
-        }
+          background: 'transparent',
+        },
       },
       timeStamp: +new Date(),
     };
     this.setSettings(settings);
     this.init();
   }
-  prepareData(data){
-    data = data.map((item) => {
+  prepareData(data = []) {
+    let sum = data.reduce((acc, item) => acc + (parseInt(item.value) || 0), 0);
+    data.forEach((item) => {
+      item.percent = (100 / sum) * item.value;
       item.color = item.color || generateRandomColor();
-      return item;
     });
     return data;
   }
@@ -86,7 +87,7 @@ export default class Pie {
     context.fillRect(0, 0, element.width, element.height);
   }
   drawDonut() {
-    let { canvas, settings } = this,
+    let { canvas, settings, data } = this,
       { offset, line } = settings,
       { context, element } = canvas,
       sideSize = Math.min(
@@ -96,14 +97,34 @@ export default class Pie {
       half = sideSize / 2,
       radius = half > 0 ? half : 1,
       x = element.clientWidth / 2 + offset.left - offset.right,
-      y = element.clientHeight / 2 + offset.top - offset.bottom;
-    context.beginPath();
-    context.strokeStyle = line.styles.color;
-    context.lineWidth = line.styles.width;
-    context.fillStyle = line.styles.background;
-    context.arc(x, y, radius, 0, 2 * Math.PI);
-    context.fill();
-    context.stroke();
+      y = element.clientHeight / 2 + offset.top - offset.bottom,
+      lineWidth = line.styles.width / 2;
+    data = this.prepareData(data);
+    let piOffset = -(Math.PI / 2);
+    for (let i = 0; i <= data.length - 1; i++) {
+      let startPi = piOffset,
+        endPi = 2 * Math.PI * data[i].percent / 100 + piOffset;
+      piOffset = endPi;
+
+      context.beginPath();
+      context.strokeStyle = data[i].color;
+      context.lineWidth = lineWidth;
+      context.fillStyle = line.styles.background;
+      context.arc(x, y, radius, startPi, endPi);
+      context.fill();
+      context.stroke();
+
+      context.save();
+      context.beginPath();
+      context.filter = 'brightness(50%)';
+      context.strokeStyle = data[i].color;
+      context.lineWidth = lineWidth;
+      context.fillStyle = line.styles.background;
+      context.arc(x, y, radius - lineWidth > 0 ? radius - lineWidth : 1, startPi, endPi);
+      context.fill();
+      context.stroke();
+      context.restore();
+    }
   }
   listeners() {}
 }
