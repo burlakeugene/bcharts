@@ -1,8 +1,8 @@
 import './extensions';
 import Line from './modules/Line';
-import Pie from './modules/Pie';
+import Donut from './modules/Donut';
 
 export {
   Line,
-  Pie,
+  Donut,
 };

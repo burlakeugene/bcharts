@@ -1,2 +1,2 @@
-import { Line, Pie } from '../Chart';
-export { Line, Pie };
+import { Line, Donut } from '../Chart';
+export { Line, Donut };

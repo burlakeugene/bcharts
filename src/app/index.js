@@ -1,4 +1,4 @@
-import { Line, Pie } from '../package';
+import { Line, Donut } from '../package';
 import './styles.scss';
 window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
@@ -41,13 +41,18 @@ window.addEventListener('load', () => {
       }, [0, 40, 100, 300][index]);
     }
   });
-  let pieCharts = document.querySelectorAll('.chart-pie');
+  let pieCharts = document.querySelectorAll('.chart-donut');
   pieCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      chart = new Pie({
+      chart = new Donut({
         canvas,
-        actions: {
-        }
+        data: [{
+          value: 30,
+          label: 'First'
+        }, {
+          value: 20,
+          label: 'Second'
+        }]
       });
   });
 });
