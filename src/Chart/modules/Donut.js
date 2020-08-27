@@ -42,7 +42,7 @@ export default class Donut {
     this.init();
   }
   prepareData(data = []) {
-    let sum = data.reduce((acc, item) => acc + (parseInt(item.value) || 0), 0);
+    let sum = data.reduce((acc, item) => acc + (parseFloat(item.value) || 0), 0);
     data.forEach((item) => {
       item.percent = (100 / sum) * item.value;
       item.color = item.color || generateRandomColor();

@@ -46,16 +46,27 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Donut({
         canvas,
-        data: [
-          {
-            value: 2,
-            label: 'First',
-          },
-          {
-            value: 2,
-            label: 'Second',
-          },
-        ],
+        data: (() => {
+          let result = [];
+          for(let i = 0; i <= Math.random() * 10; i++){
+            result.push({
+              value: Math.random(),
+              label: 'Label '+ i
+            })
+          }
+          return result;
+        })()
       });
   });
 });
+
+// [
+//   {
+//     value: 2,
+//     label: 'First',
+//   },
+//   {
+//     value: 2,
+//     label: 'Second',
+//   },
+// ],
