@@ -1,4 +1,9 @@
-import { generateRandomColor, generateDate, deepMerge } from '../common';
+import {
+  generateRandomColor,
+  generateDate,
+  deepMerge,
+  getPointOnArc,
+} from '../common';
 
 export default class Donut {
   constructor({
@@ -36,13 +41,37 @@ export default class Donut {
           background: 'transparent',
         },
       },
+      texts: {
+        center: {
+          enable: true,
+          text: '100%',
+          styles: {
+            font: '800 20px arial',
+            textAlign: 'center',
+            textBaseline: 'middle',
+            color: '#fff',
+          },
+        },
+        partPercent: {
+          enable: true,
+          styles: {
+            font: '100 10px arial',
+            textAlign: 'center',
+            textBaseline: 'middle',
+            color: '#fff',
+          },
+        }
+      },
       timeStamp: +new Date(),
     };
     this.setSettings(settings);
     this.init();
   }
   prepareData(data = []) {
-    let sum = data.reduce((acc, item) => acc + (parseFloat(item.value) || 0), 0);
+    let sum = data.reduce(
+      (acc, item) => acc + (parseFloat(item.value) || 0),
+      0
+    );
     data.forEach((item) => {
       item.percent = (100 / sum) * item.value;
       item.color = item.color || generateRandomColor();
@@ -88,7 +117,7 @@ export default class Donut {
   }
   drawDonut() {
     let { canvas, settings, data } = this,
-      { offset, line } = settings,
+      { offset, line, texts } = settings,
       { context, element } = canvas,
       sideSize = Math.min(
         element.clientHeight - offset.top - offset.bottom - line.styles.width,
@@ -101,11 +130,20 @@ export default class Donut {
       lineWidth = line.styles.width / 2;
     data = this.prepareData(data);
     let piOffset = -(Math.PI / 2);
+    //draw center
+    if(texts.center.enable){
+      context.font = texts.center.styles.font;
+      context.fillStyle = texts.center.styles.color;
+      context.textAlign = texts.center.styles.textAlign;
+      context.textBaseline = texts.center.styles.textBaseline;
+      context.fillText(texts.center.text, x, y);
+    }
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
-        endPi = 2 * Math.PI * data[i].percent / 100 + piOffset;
+        endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
       piOffset = endPi;
 
+      //draw arc
       context.beginPath();
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
@@ -114,16 +152,39 @@ export default class Donut {
       context.fill();
       context.stroke();
 
+      //draw inner arc
       context.save();
       context.beginPath();
       context.filter = 'brightness(50%)';
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
-      context.arc(x, y, radius - lineWidth > 0 ? radius - lineWidth : 1, startPi, endPi);
+      context.arc(
+        x,
+        y,
+        radius - lineWidth > 0 ? radius - lineWidth : 1,
+        startPi,
+        endPi
+      );
       context.fill();
       context.stroke();
       context.restore();
+
+      //draw percent
+      if(texts.partPercent.enable){
+        context.font = texts.partPercent.styles.font;
+        context.fillStyle = texts.partPercent.styles.color;
+        context.textAlign = texts.partPercent.styles.textAlign;
+        context.textBaseline = texts.partPercent.styles.textBaseline;
+        let pointText = parseFloat(data[i].percent.toFixed(2)) + '%',
+          point = getPointOnArc(
+            x,
+            y,
+            radius + lineWidth / 2 + context.measureText(pointText).width / 2 + 5,
+            (startPi + endPi) / 2
+          );
+        context.fillText(pointText, point.x, point.y);
+      }
     }
   }
   listeners() {}

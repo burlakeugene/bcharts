@@ -34,3 +34,10 @@ export const generateRandomColor = () => {
   }
   return color;
 };
+
+export const getPointOnArc = (x, y, radius, angle) => {
+  return {
+    x: x + Math.cos(angle) * radius,
+    y: y + Math.sin(angle) * radius
+  };
+}
