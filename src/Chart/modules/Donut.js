@@ -27,6 +27,7 @@ export default class Donut {
         canvas.tagName.toLowerCase() === 'canvas',
     };
     this.data = data;
+    this.cursor = { x: 0, y: 0 };
     this.settings = {
       offset: { ...offset },
       view: {
@@ -60,7 +61,7 @@ export default class Donut {
             textBaseline: 'middle',
             color: '#fff',
           },
-        }
+        },
       },
       timeStamp: +new Date(),
     };
@@ -116,7 +117,7 @@ export default class Donut {
     context.fillRect(0, 0, element.width, element.height);
   }
   drawDonut() {
-    let { canvas, settings, data } = this,
+    let { canvas, settings, data, cursor } = this,
       { offset, line, texts } = settings,
       { context, element } = canvas,
       sideSize = Math.min(
@@ -131,7 +132,7 @@ export default class Donut {
     data = this.prepareData(data);
     let piOffset = -(Math.PI / 2);
     //draw center
-    if(texts.center.enable){
+    if (texts.center.enable) {
       context.font = texts.center.styles.font;
       context.fillStyle = texts.center.styles.color;
       context.textAlign = texts.center.styles.textAlign;
@@ -142,15 +143,19 @@ export default class Donut {
       let startPi = piOffset,
         endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
       piOffset = endPi;
-
       //draw arc
-      context.beginPath();
+      context.save();
+      let path = new Path2D();
+      path.arc(x, y, radius, startPi, endPi);
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
-      context.arc(x, y, radius, startPi, endPi);
-      context.fill();
-      context.stroke();
+      let isHovered =
+        cursor.x && cursor.y && context.isPointInPath(path, cursor.x, cursor.y);
+      // if (isHovered) context.filter = 'brightness(30%)';
+      context.fill(path);
+      context.stroke(path);
+      context.restore();
 
       //draw inner arc
       context.save();
@@ -171,7 +176,7 @@ export default class Donut {
       context.restore();
 
       //draw percent
-      if(texts.partPercent.enable){
+      if (texts.partPercent.enable) {
         context.font = texts.partPercent.styles.font;
         context.fillStyle = texts.partPercent.styles.color;
         context.textAlign = texts.partPercent.styles.textAlign;
@@ -180,12 +185,34 @@ export default class Donut {
           point = getPointOnArc(
             x,
             y,
-            radius + lineWidth / 2 + context.measureText(pointText).width / 2 + 5,
+            radius +
+              lineWidth / 2 +
+              context.measureText(pointText).width / 2 +
+              5,
             (startPi + endPi) / 2
           );
         context.fillText(pointText, point.x, point.y);
       }
     }
   }
-  listeners() {}
+  listeners() {
+    let { canvas, data } = this,
+      { context, element } = canvas;
+    element.addEventListener('mousemove', (e) => {
+      let { settings } = this,
+        elementOffset = element.getBoundingClientRect(),
+        x = e.clientX - elementOffset.left,
+        y = e.clientY - elementOffset.top;
+      this.cursor = {
+        x,
+        y,
+      };
+    });
+    element.addEventListener('mouseout', (e) => {
+      this.cursor = {
+        x: 0,
+        y: 0,
+      };
+    });
+  }
 }
