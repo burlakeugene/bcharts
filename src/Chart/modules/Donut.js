@@ -116,6 +116,35 @@ export default class Donut {
     context.fillStyle = background;
     context.fillRect(0, 0, element.width, element.height);
   }
+  generatePolygon({ count = 20, x, y, radius, lineWidth, startPi, endPi }) {
+    let polygon = [],
+      temp = (endPi - startPi) / count;
+    temp = isFinite(temp) ? temp : 0;
+    for (let i = 0; i <= count; i++) {
+      polygon.push(
+        getPointOnArc(x, y, radius + lineWidth / 2, startPi + temp * i)
+      );
+    }
+    for (let i = 0; i <= count; i++) {
+      polygon.push(
+        getPointOnArc(x, y, radius - lineWidth * 1.5, endPi - temp * i)
+      );
+    }
+    return polygon;
+  }
+  isPathHover({ x, y, polygon }) {
+    var inside = false;
+    for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      var xi = polygon[i].x,
+        yi = polygon[i].y;
+      var xj = polygon[j].x,
+        yj = polygon[j].y;
+      var intersect =
+        yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
   drawDonut() {
     let { canvas, settings, data, cursor } = this,
       { offset, line, texts } = settings,
@@ -143,24 +172,36 @@ export default class Donut {
       let startPi = piOffset,
         endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
       piOffset = endPi;
+      let polygon = this.generatePolygon({
+          x,
+          y,
+          radius,
+          lineWidth,
+          startPi,
+          endPi,
+        }),
+        mouseInPath = this.isPathHover({
+          x: cursor.x,
+          y: cursor.y,
+          polygon,
+        });
+
       //draw arc
       context.save();
-      let path = new Path2D();
-      path.arc(x, y, radius, startPi, endPi);
+      context.beginPath();
+      if(mouseInPath) context.filter = 'brightness(120%)';
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
-      let isHovered =
-        cursor.x && cursor.y && context.isPointInPath(path, cursor.x, cursor.y);
-      // if (isHovered) context.filter = 'brightness(30%)';
-      context.fill(path);
-      context.stroke(path);
+      context.arc(x, y, radius, startPi, endPi);
+      context.fill();
+      context.stroke();
       context.restore();
 
       //draw inner arc
       context.save();
       context.beginPath();
-      context.filter = 'brightness(50%)';
+      context.filter = mouseInPath ? 'brightness(70%)' : 'brightness(50%)';
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
