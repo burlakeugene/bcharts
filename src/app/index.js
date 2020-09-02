@@ -45,17 +45,20 @@ window.addEventListener('load', () => {
   pieCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
       chart = new Donut({
+        settings: {
+          line: {},
+        },
         canvas,
         data: (() => {
           let result = [];
-          for(let i = 0; i <= Math.random() * 10; i++){
+          for (let i = 0; i <= Math.random() * 10; i++) {
             result.push({
               value: Math.random(),
-              label: 'Label '+ i
-            })
+              label: 'Label ' + i,
+            });
           }
           return result;
-        })()
+        })(),
       });
   });
 });

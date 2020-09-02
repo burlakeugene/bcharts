@@ -37,7 +37,8 @@ export default class Donut {
       },
       line: {
         styles: {
-          width: 60,
+          volumed: true,
+          width: 40,
           color: '#fff',
           background: 'transparent',
         },
@@ -47,20 +48,22 @@ export default class Donut {
           enable: true,
           text: '100%',
           styles: {
-            font: '800 20px arial',
-            textAlign: 'center',
-            textBaseline: 'middle',
             color: '#fff',
           },
         },
         partPercent: {
           enable: true,
           styles: {
-            font: '100 10px arial',
-            textAlign: 'center',
-            textBaseline: 'middle',
             color: '#fff',
           },
+        },
+      },
+      hoverPanel: {
+        enable: true,
+        styles: {
+          color: '#fff',
+          background: '#954ce9',
+          borderRadius: 2,
         },
       },
       timeStamp: +new Date(),
@@ -102,6 +105,7 @@ export default class Donut {
   render() {
     this.drawBackground();
     this.drawDonut();
+    this.drawHoverPanel();
     requestAnimationFrame(this.render.bind(this));
   }
   drawBackground() {
@@ -127,7 +131,7 @@ export default class Donut {
     }
     for (let i = 0; i <= count; i++) {
       polygon.push(
-        getPointOnArc(x, y, radius - lineWidth * 1.5, endPi - temp * i)
+        getPointOnArc(x, y, radius - lineWidth / 2, endPi - temp * i)
       );
     }
     return polygon;
@@ -157,15 +161,16 @@ export default class Donut {
       radius = half > 0 ? half : 1,
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
-      lineWidth = line.styles.width / 2;
+      lineWidth = line.styles.width,
+      volumedLine = line.styles.volumed;
     data = this.prepareData(data);
     let piOffset = -(Math.PI / 2);
     //draw center
     if (texts.center.enable) {
-      context.font = texts.center.styles.font;
+      context.font = '800 20px arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
       context.fillStyle = texts.center.styles.color;
-      context.textAlign = texts.center.styles.textAlign;
-      context.textBaseline = texts.center.styles.textBaseline;
       context.fillText(texts.center.text, x, y);
     }
     for (let i = 0; i <= data.length - 1; i++) {
@@ -185,11 +190,13 @@ export default class Donut {
           y: cursor.y,
           polygon,
         });
+      data[i].polygon = polygon;
+      data[i].hovered = mouseInPath;
 
       //draw arc
       context.save();
       context.beginPath();
-      if(mouseInPath) context.filter = 'brightness(120%)';
+      if (mouseInPath) context.filter = 'brightness(120%)';
       context.strokeStyle = data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
@@ -198,42 +205,104 @@ export default class Donut {
       context.stroke();
       context.restore();
 
-      //draw inner arc
-      context.save();
-      context.beginPath();
-      context.filter = mouseInPath ? 'brightness(70%)' : 'brightness(50%)';
-      context.strokeStyle = data[i].color;
-      context.lineWidth = lineWidth;
-      context.fillStyle = line.styles.background;
-      context.arc(
-        x,
-        y,
-        radius - lineWidth > 0 ? radius - lineWidth : 1,
-        startPi,
-        endPi
-      );
-      context.fill();
-      context.stroke();
-      context.restore();
+      // draw inner arc
+      if (volumedLine) {
+        context.save();
+        context.beginPath();
+        context.filter = mouseInPath ? 'brightness(70%)' : 'brightness(50%)';
+        context.strokeStyle = data[i].color;
+        context.lineWidth = lineWidth / 2;
+        context.fillStyle = line.styles.background;
+        let innerRadius = radius - lineWidth / 4;
+        if (innerRadius < 0) innerRadius = 0;
+        context.arc(x, y, innerRadius, startPi, endPi);
+        context.fill();
+        context.stroke();
+        context.restore();
+      }
 
       //draw percent
       if (texts.partPercent.enable) {
-        context.font = texts.partPercent.styles.font;
+        context.font = '100 10px arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
         context.fillStyle = texts.partPercent.styles.color;
-        context.textAlign = texts.partPercent.styles.textAlign;
-        context.textBaseline = texts.partPercent.styles.textBaseline;
         let pointText = parseFloat(data[i].percent.toFixed(2)) + '%',
           point = getPointOnArc(
             x,
             y,
-            radius +
-              lineWidth / 2 +
-              context.measureText(pointText).width / 2 +
-              5,
+            radius + lineWidth + 5,
             (startPi + endPi) / 2
           );
         context.fillText(pointText, point.x, point.y);
       }
+    }
+  }
+  drawHoverPanel() {
+    let { canvas, settings, data = [], cursor } = this,
+      { element, context } = canvas,
+      { hoverPanel } = settings,
+      hovered = data.filter((d) => {
+        return d.hovered;
+      });
+    hovered = hovered.length ? hovered[0] : false;
+    if (hovered && hoverPanel && hoverPanel.enable) {
+      let texts = [
+        hovered.label,
+        hovered.value,
+        parseFloat(hovered.percent.toFixed(2)) + '%',
+      ];
+      context.font = '100 12px arial';
+      let width =
+          Math.max(
+            ...texts.map((text) => {
+              return context.measureText(text).width;
+            })
+          ) + 14,
+        height = 18 * texts.length,
+        leftCenter = cursor.x,
+        topOffset = 10,
+        left = cursor.x - width / 2,
+        invert = false,
+        top = cursor.y - height - topOffset;
+      if (top < 0) {
+        invert = true;
+        top = cursor.y + topOffset;
+      }
+      if(left < 0) left = 0;
+      if(left + width > element.clientWidth){
+        left = element.clientWidth - width;
+      }
+      context.strokeStyle = context.fillStyle = hoverPanel.styles.background;
+      context.beginPath();
+      if (invert) {
+        context.moveTo(leftCenter, top - 5);
+        context.lineTo(leftCenter - 5, top);
+        context.lineTo(leftCenter + 5, top);
+      } else {
+        context.moveTo(leftCenter, top + height + 5);
+        context.lineTo(leftCenter - 5, top + height);
+        context.lineTo(leftCenter + 5, top + height);
+      }
+      context.fill();
+      context.stroke();
+      context.beginPath();
+      context.roundRect(
+        left,
+        top,
+        width,
+        height,
+        hoverPanel.styles.borderRadius
+      );
+      context.fill();
+      context.stroke();
+      context.font = '100 12px arial';
+      context.textAlign = 'left';
+      context.textBaseline = 'middle';
+      context.fillStyle = hoverPanel.styles.color;
+      texts.forEach((text, i) => {
+        context.fillText(text, left + 7, top + 14 * (i + 1));
+      })
     }
   }
   listeners() {
