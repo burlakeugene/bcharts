@@ -3,6 +3,7 @@ import {
   generateDate,
   deepMerge,
   getPointOnArc,
+  colorChangeTone,
 } from '../common';
 
 export default class Donut {
@@ -196,8 +197,9 @@ export default class Donut {
       //draw arc
       context.save();
       context.beginPath();
-      if (mouseInPath) context.filter = 'brightness(120%)';
-      context.strokeStyle = data[i].color;
+      context.strokeStyle = mouseInPath
+        ? colorChangeTone(data[i].color, 20)
+        : data[i].color;
       context.lineWidth = lineWidth;
       context.fillStyle = line.styles.background;
       context.arc(x, y, radius, startPi, endPi);
@@ -209,8 +211,9 @@ export default class Donut {
       if (volumedLine) {
         context.save();
         context.beginPath();
-        context.filter = mouseInPath ? 'brightness(70%)' : 'brightness(50%)';
-        context.strokeStyle = data[i].color;
+        context.strokeStyle = mouseInPath
+          ? colorChangeTone(data[i].color, -30)
+          : colorChangeTone(data[i].color, -50);
         context.lineWidth = lineWidth / 2;
         context.fillStyle = line.styles.background;
         let innerRadius = radius - lineWidth / 4;
@@ -269,8 +272,8 @@ export default class Donut {
         invert = true;
         top = cursor.y + topOffset;
       }
-      if(left < 0) left = 0;
-      if(left + width > element.clientWidth){
+      if (left < 0) left = 0;
+      if (left + width > element.clientWidth) {
         left = element.clientWidth - width;
       }
       context.strokeStyle = context.fillStyle = hoverPanel.styles.background;
@@ -302,7 +305,7 @@ export default class Donut {
       context.fillStyle = hoverPanel.styles.color;
       texts.forEach((text, i) => {
         context.fillText(text, left + 7, top + 14 * (i + 1));
-      })
+      });
     }
   }
   listeners() {
