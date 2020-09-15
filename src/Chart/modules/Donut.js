@@ -4,6 +4,7 @@ import {
   deepMerge,
   getPointOnArc,
   colorChangeTone,
+  getContrastColor,
 } from '../common';
 
 export default class Donut {
