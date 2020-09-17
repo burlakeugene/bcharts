@@ -42,7 +42,6 @@ export default class Donut {
           volumed: true,
           width: 40,
           color: '#fff',
-          background: 'transparent',
         },
       },
       texts: {
@@ -153,7 +152,7 @@ export default class Donut {
   }
   drawDonut() {
     let { canvas, settings, data, cursor } = this,
-      { offset, line, texts } = settings,
+      { offset, line, texts, hoverPanel } = settings,
       { context, element } = canvas,
       sideSize = Math.min(
         element.clientHeight - offset.top - offset.bottom - line.styles.width,
@@ -167,14 +166,6 @@ export default class Donut {
       volumedLine = line.styles.volumed;
     data = this.prepareData(data);
     let piOffset = -(Math.PI / 2);
-    //draw center
-    if (texts.center.enable) {
-      context.font = '800 20px arial';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillStyle = texts.center.styles.color;
-      context.fillText(texts.center.text, x, y);
-    }
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
         endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
@@ -187,7 +178,7 @@ export default class Donut {
           startPi,
           endPi,
         }),
-        mouseInPath = this.isPathHover({
+        mouseInPath = hoverPanel.enable && this.isPathHover({
           x: cursor.x,
           y: cursor.y,
           polygon,
@@ -202,7 +193,7 @@ export default class Donut {
         ? colorChangeTone(data[i].color, 20)
         : data[i].color;
       context.lineWidth = lineWidth;
-      context.fillStyle = line.styles.background;
+      context.fillStyle = 'transparent';
       context.arc(x, y, radius, startPi, endPi);
       context.fill();
       context.stroke();
@@ -216,7 +207,7 @@ export default class Donut {
           ? colorChangeTone(data[i].color, -30)
           : colorChangeTone(data[i].color, -50);
         context.lineWidth = lineWidth / 2;
-        context.fillStyle = line.styles.background;
+        context.fillStyle = 'transparent';
         let innerRadius = radius - lineWidth / 4;
         if (innerRadius < 0) innerRadius = 0;
         context.arc(x, y, innerRadius, startPi, endPi);
@@ -235,11 +226,19 @@ export default class Donut {
           point = getPointOnArc(
             x,
             y,
-            radius + lineWidth + 5,
+            radius + lineWidth,
             (startPi + endPi) / 2
           );
         context.fillText(pointText, point.x, point.y);
       }
+    }
+    //draw center
+    if (texts.center.enable) {
+      context.font = '800 20px arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = texts.center.styles.color;
+      context.fillText(texts.center.text, x, y);
     }
   }
   drawHoverPanel() {

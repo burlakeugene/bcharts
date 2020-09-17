@@ -54,7 +54,7 @@ window.addEventListener('load', () => {
           for (let i = 0; i <= Math.random() * 10; i++) {
             result.push({
               value: Math.random(),
-              label: 'Label ' + i,
+              label: 'Label ' + i
             });
           }
           return result;
