@@ -62,14 +62,3 @@ window.addEventListener('load', () => {
       });
   });
 });
-
-// [
-//   {
-//     value: 2,
-//     label: 'First',
-//   },
-//   {
-//     value: 2,
-//     label: 'Second',
-//   },
-// ],
