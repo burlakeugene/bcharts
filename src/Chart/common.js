@@ -76,6 +76,28 @@ export const calcCenterOfPolygon = (points) => {
   };
 };
 
+export const getIntersection = ({ A, B, C, D }) => {
+  let result = {
+    x: 0,
+    y: 0,
+    intersected: false,
+  };
+  if (!A || !B || !C || !D) return result;
+  let d =
+    ((C.x - A.x) * (B.y - A.y) - (B.x - A.x) * (C.y - A.y)) /
+    ((B.x - A.x) * (D.y - C.y) - (D.x - C.x) * (B.y - A.y));
+  result.x = C.x + (D.x - C.x) * d;
+  result.y = C.y + (D.y - C.y) * d;
+  result.intersected = (() => {
+    let v1 = (D.x - C.x) * (A.y - C.y) - (D.y - C.y) * (A.x - C.x),
+      v2 = (D.x - C.x) * (B.y - C.y) - (D.y - C.y) * (B.x - C.x),
+      v3 = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x),
+      v4 = (B.x - A.x) * (D.y - A.y) - (B.y - A.y) * (D.x - A.x);
+    return v1 * v2 < 0 && v3 * v4 < 0;
+  })();
+  return result;
+}
+
 export const getContrastColor = (hex, bw) => {
   if (hex.indexOf('#') === 0) {
     hex = hex.slice(1);
