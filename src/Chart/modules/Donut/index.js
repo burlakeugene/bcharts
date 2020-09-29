@@ -1,76 +1,17 @@
 import {
   generateRandomColor,
   generateDate,
-  deepMerge,
   getPointOnArc,
   colorChangeTone,
   getContrastColor,
-} from '../common';
+} from '../../common';
+import defaultSettings from './defaultSettings';
+import Chart from '../chart';
 
-export default class Donut {
-  constructor({
-    canvas = false,
-    data = [],
-    settings = {},
-    offset = {
-      top: 30,
-      right: 30,
-      bottom: 30,
-      left: 30,
-    },
-    actions = {},
-  }) {
-    this.actions = actions;
-    this.canvas = {
-      element: canvas,
-      context: canvas.getContext('2d'),
-      isCanvas:
-        (canvas instanceof Element || canvas instanceof HTMLDocument) &&
-        canvas.tagName.toLowerCase() === 'canvas',
-    };
-    this.data = data;
-    this.cursor = { x: 0, y: 0 };
-    this.settings = {
-      offset: { ...offset },
-      view: {
-        styles: {
-          background: '#1a1e30',
-        },
-      },
-      line: {
-        styles: {
-          volumed: true,
-          width: 40,
-          color: '#fff',
-        },
-      },
-      texts: {
-        center: {
-          enable: true,
-          text: '100%',
-          styles: {
-            color: '#fff',
-          },
-        },
-        partPercent: {
-          enable: true,
-          styles: {
-            color: '#fff',
-          },
-        },
-      },
-      hoverPanel: {
-        enable: true,
-        styles: {
-          color: '#fff',
-          background: '#954ce9',
-          borderRadius: 2,
-        },
-      },
-      timeStamp: +new Date(),
-    };
-    this.setSettings(settings);
-    this.init();
+export default class Donut extends Chart {
+  constructor(props) {
+    props.defaultSettings = defaultSettings;
+    super(props);
   }
   prepareData(data = []) {
     let sum = data.reduce(
@@ -83,41 +24,11 @@ export default class Donut {
     });
     return data;
   }
-  setSettings(newSettings = {}) {
-    if (newSettings.offset) {
-      newSettings.line = {};
-      newSettings.line.offset = newSettings.offset;
-    }
-    deepMerge(this.settings, newSettings);
-  }
-  getSettings() {
-    return this.settings;
-  }
-  setData(data) {
-    this.data = data;
-  }
-  getData() {
-    return this.data;
-  }
-  init() {
-    this.listeners();
-    this.render();
-  }
-  render() {
-    this.drawBackground();
-    this.drawDonut();
-    this.drawHoverPanel();
-    requestAnimationFrame(this.render.bind(this));
-  }
   drawBackground() {
     let { canvas, settings } = this,
       { view } = settings,
       { context, element } = canvas,
-      { background } = view.styles,
-      ratio = window.devicePixelRatio || 1;
-    element.width = element.clientWidth * ratio;
-    element.height = element.clientHeight * ratio;
-    context.scale(ratio, ratio);
+      { background } = view.styles;
     context.fillStyle = background;
     context.fillRect(0, 0, element.width, element.height);
   }
@@ -178,11 +89,13 @@ export default class Donut {
           startPi,
           endPi,
         }),
-        mouseInPath = hoverPanel.enable && this.isPathHover({
-          x: cursor.x,
-          y: cursor.y,
-          polygon,
-        });
+        mouseInPath =
+          hoverPanel.enable &&
+          this.isPathHover({
+            x: cursor.x,
+            y: cursor.y,
+            polygon,
+          });
       data[i].polygon = polygon;
       data[i].hovered = mouseInPath;
 
@@ -272,10 +185,10 @@ export default class Donut {
         invert = true;
         top = cursor.y + topOffset;
       }
-      if (left < 0) left = 0;
       if (left + width > element.clientWidth) {
         left = element.clientWidth - width;
       }
+      if (left < 0) left = 0;
       context.strokeStyle = context.fillStyle = hoverPanel.styles.background;
       context.beginPath();
       if (invert) {
@@ -308,24 +221,10 @@ export default class Donut {
       });
     }
   }
-  listeners() {
-    let { canvas, data } = this,
-      { context, element } = canvas;
-    element.addEventListener('mousemove', (e) => {
-      let { settings } = this,
-        elementOffset = element.getBoundingClientRect(),
-        x = e.clientX - elementOffset.left,
-        y = e.clientY - elementOffset.top;
-      this.cursor = {
-        x,
-        y,
-      };
-    });
-    element.addEventListener('mouseout', (e) => {
-      this.cursor = {
-        x: 0,
-        y: 0,
-      };
-    });
+  render() {
+    super.commonRender();
+    this.drawBackground();
+    this.drawDonut();
+    this.drawHoverPanel();
   }
 }
