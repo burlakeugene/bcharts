@@ -27,7 +27,7 @@ export default {
       },
     },
     partPercent: {
-      enable: true,
+      enable: false,
       styles: {
         color: '#fff',
       },
