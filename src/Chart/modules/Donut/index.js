@@ -21,6 +21,7 @@ export default class Donut extends Chart {
     data.forEach((item) => {
       item.percent = (100 / sum) * item.value;
       item.color = item.color || generateRandomColor();
+      item.lighten = item.lighten || 1;
     });
     return data;
   }
@@ -74,7 +75,8 @@ export default class Donut extends Chart {
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
       lineWidth = line.styles.width,
-      volumedLine = line.styles.volumed;
+      { animated, volumed } = line,
+      hoveredLighten = 20;
     data = this.prepareData(data);
     let piOffset = -(Math.PI / 2);
     for (let i = 0; i <= data.length - 1; i++) {
@@ -99,12 +101,35 @@ export default class Donut extends Chart {
       data[i].polygon = polygon;
       data[i].hovered = mouseInPath;
 
+      //change color on hover
+      if (data[i].hovered) {
+        if (animated) {
+          if (data[i].lighten < hoveredLighten) {
+            setTimeout(() => {
+              data[i].lighten += 1;
+              this.render();
+            }, 1000 / 60);
+          }
+        } else {
+          data[i].lighten = hoveredLighten;
+        }
+      } else {
+        if (animated) {
+          if (data[i].lighten > 1) {
+            setTimeout(() => {
+              data[i].lighten -= 1;
+              this.render();
+            }, 1000 / 60);
+          }
+        } else {
+          data[i].lighten = 1;
+        }
+      }
+
       //draw arc
       context.save();
       context.beginPath();
-      context.strokeStyle = mouseInPath
-        ? colorChangeTone(data[i].color, 20)
-        : data[i].color;
+      context.strokeStyle = colorChangeTone(data[i].color, data[i].lighten);
       context.lineWidth = lineWidth;
       context.fillStyle = 'transparent';
       context.arc(x, y, radius, startPi, endPi);
@@ -113,12 +138,13 @@ export default class Donut extends Chart {
       context.restore();
 
       // draw inner arc
-      if (volumedLine) {
+      if (volumed) {
         context.save();
         context.beginPath();
-        context.strokeStyle = mouseInPath
-          ? colorChangeTone(data[i].color, -30)
-          : colorChangeTone(data[i].color, -50);
+        context.strokeStyle = colorChangeTone(
+          data[i].color,
+          -50 + data[i].lighten
+        );
         context.lineWidth = lineWidth / 2;
         context.fillStyle = 'transparent';
         let innerRadius = radius - lineWidth / 4;
@@ -222,9 +248,12 @@ export default class Donut extends Chart {
     }
   }
   render() {
-    super.commonRender();
-    this.drawBackground();
-    this.drawDonut();
-    this.drawHoverPanel();
+    if (this.renderTimeout) clearTimeout(this.renderTimeout);
+    this.renderTimeout = setTimeout(() => {
+      super.commonRender();
+      this.drawBackground();
+      this.drawDonut();
+      this.drawHoverPanel();
+    }, 0);
   }
 }

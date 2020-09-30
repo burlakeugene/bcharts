@@ -11,9 +11,10 @@ export default {
     },
   },
   line: {
+    animated: true,
+    volumed: true,
     styles: {
-      volumed: true,
-      width: 40,
+      width: 80,
       color: '#fff',
     },
   },
