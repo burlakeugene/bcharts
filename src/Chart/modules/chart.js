@@ -8,7 +8,9 @@ export default class Common {
       defaultSettings = {},
       settings = {},
       actions = {},
+      type
     } = props;
+    this.type = type;
     this.actions = actions;
     this.canvas = {
       element: canvas,
@@ -19,7 +21,7 @@ export default class Common {
     };
     this.data = data;
     this.cursor = { x: 0, y: 0 };
-    this.settings = defaultSettings;
+    this.settings = JSON.parse(JSON.stringify(defaultSettings));
     this.timeStamp = +new Date();
     this.setSettings(settings);
     this.commonInit();
