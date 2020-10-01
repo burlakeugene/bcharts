@@ -11,21 +11,13 @@ export default {
     },
   },
   slice: {
-    animated: true,
     volumed: true,
+    animated: true,
     styles: {
-      width: 80,
-      color: '#fff',
+      color: '#fff'
     },
   },
   texts: {
-    center: {
-      enable: true,
-      text: '100%',
-      styles: {
-        color: '#fff',
-      },
-    },
     partPercent: {
       enable: false,
       styles: {

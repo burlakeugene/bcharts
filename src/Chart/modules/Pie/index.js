@@ -65,24 +65,24 @@ export default class Donut extends Chart {
   drawDonut() {
     let { canvas, settings, data, cursor } = this,
       { offset, slice, texts, hoverPanel } = settings,
+      { animated } = slice,
       { context, element } = canvas,
-      sideSize = Math.min(
-        element.clientHeight - offset.top - offset.bottom - slice.styles.width,
-        element.clientWidth - offset.left - offset.right - slice.styles.width
-      ),
-      half = sideSize / 2,
-      radius = half > 0 ? half : 1,
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
-      sliceWidth = slice.styles.width,
-      { animated, volumed } = slice,
-      hoveredValue = 20,
-      piOffset = -(Math.PI / 2);
+      sideSize = Math.min(
+        element.clientHeight - offset.top - offset.bottom,
+        element.clientWidth - offset.left - offset.right
+      ),
+      sliceWidth = sideSize / 2,
+      radius = sideSize / 4,
+      piOffset = -(Math.PI / 2),
+      hoveredValue = 20;
     data = this.prepareData(data);
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
         endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
       piOffset = endPi;
+
       let polygon = this.generatePolygon({
           x,
           y,
@@ -132,54 +132,12 @@ export default class Donut extends Chart {
       context.save();
       context.beginPath();
       context.strokeStyle = colorChangeTone(data[i].color, data[i].state);
-      context.lineWidth = sliceWidth;
+      context.lineWidth = sliceWidth + data[i].state;
       context.fillStyle = 'transparent';
-      context.arc(x, y, radius + data[i].state, startPi, endPi);
+      context.arc(x, y, radius + data[i].state / 2, startPi, endPi);
       context.fill();
       context.stroke();
       context.restore();
-
-      // draw inner arc
-      if (volumed) {
-        context.save();
-        context.beginPath();
-        context.strokeStyle = colorChangeTone(
-          data[i].color,
-          -50 + data[i].state
-        );
-        context.lineWidth = sliceWidth / 2 + data[i].state;
-        context.fillStyle = 'transparent';
-        let innerRadius = radius - sliceWidth / 4;
-        if (innerRadius < 0) innerRadius = 0;
-        context.arc(x, y, innerRadius + data[i].state / 2, startPi, endPi);
-        context.fill();
-        context.stroke();
-        context.restore();
-      }
-
-      //draw percent
-      if (texts.partPercent.enable) {
-        context.font = '100 10px arial';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.fillStyle = texts.partPercent.styles.color;
-        let pointText = parseFloat(data[i].percent.toFixed(2)) + '%',
-          point = getPointOnArc(
-            x,
-            y,
-            radius + sliceWidth,
-            (startPi + endPi) / 2
-          );
-        context.fillText(pointText, point.x, point.y);
-      }
-    }
-    //draw center
-    if (texts.center.enable) {
-      context.font = '800 20px arial';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillStyle = texts.center.styles.color;
-      context.fillText(texts.center.text, x, y);
     }
   }
   drawHoverPanel() {
