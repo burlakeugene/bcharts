@@ -83,14 +83,18 @@ export default class Slices extends Chart {
       { animated, volumed } = slice,
       hoveredValue = 20,
       piOffset = -(Math.PI / 2);
-    // context.globalAlpha = state.loading;
     data = this.prepareData(data);
     if (type === 'pie') {
       sliceWidth = sideSize / 2;
       radius = sideSize / 4;
     }
     if (type === 'donut') {
-      sliceWidth = slice.styles.width;
+      if(slice.styles.width >= sideSize){
+        sliceWidth = sideSize;
+      }
+      else{
+        sliceWidth = slice.styles.width;
+      }
       radius = sideSize / 2;
     }
     for (let i = 0; i <= data.length - 1; i++) {
@@ -210,7 +214,7 @@ export default class Slices extends Chart {
     }
     //draw center
     if (type === 'donut' && texts.center.enable) {
-      context.font = '800 20px arial';
+      context.font = '800 '+20 * state.loading+'px arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = texts.center.styles.color;
