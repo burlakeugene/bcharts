@@ -11,6 +11,9 @@ export default class Common {
       type
     } = props;
     this.type = type;
+    this.state = {
+      loading: 0
+    };
     this.actions = actions;
     this.canvas = {
       element: canvas,
@@ -53,7 +56,16 @@ export default class Common {
       { context, element } = canvas;
     context.clearRect(0, 0, canvas.width, canvas.height);
   }
+  loading(){
+    if(this.state.loading >= 1) return;
+    setTimeout(() => {
+      this.state.loading += 60 / 2000;
+      this.loading();
+      this.render();
+    }, 1000 / 60);
+  }
   commonInit() {
+    this.loading();
     this.commonListeners();
     this.render();
   }

@@ -8,7 +8,7 @@ import {
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
 
-export default class Donut extends Chart {
+export default class Slices extends Chart {
   constructor(props) {
     props.defaultSettings = defaultSettings;
     super(props);
@@ -63,7 +63,7 @@ export default class Donut extends Chart {
     return inside;
   }
   drawSlices() {
-    let { canvas, settings, data, cursor, type } = this,
+    let { canvas, settings, data, cursor, type, state } = this,
       { offset, slice, texts, hoverPanel } = settings,
       { context, element } = canvas,
       sideSize = Math.min(
@@ -75,15 +75,24 @@ export default class Donut extends Chart {
           offset.left -
           offset.right -
           (type === 'donut' ? slice.styles.width : 0)
-      ),
-      sliceWidth = type === 'pie' ? sideSize / 2 : slice.styles.width,
-      radius = sideSize / (type === 'pie' ? 4 : 2),
+      ) * state.loading,
+      sliceWidth,
+      radius,
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
       { animated, volumed } = slice,
       hoveredValue = 20,
       piOffset = -(Math.PI / 2);
+    // context.globalAlpha = state.loading;
     data = this.prepareData(data);
+    if (type === 'pie') {
+      sliceWidth = sideSize / 2;
+      radius = sideSize / 4;
+    }
+    if (type === 'donut') {
+      sliceWidth = slice.styles.width;
+      radius = sideSize / 2;
+    }
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
         endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
@@ -133,36 +142,51 @@ export default class Donut extends Chart {
         }
       }
 
-      //draw arc
-      context.save();
-      context.beginPath();
-      context.strokeStyle = colorChangeTone(data[i].color, data[i].state);
-      context.lineWidth = sliceWidth + (type === 'pie' ? data[i].state : 0);
-      context.fillStyle = 'transparent';
-      context.arc(
+      let ring = [];
+
+      ring.push({
+        radius: radius + data[i].state / 2,
+        width: sliceWidth + data[i].state,
+        color: colorChangeTone(data[i].color, data[i].state),
         x,
         y,
-        radius + data[i].state / (type === 'pie' ? 2 : 1),
         startPi,
-        endPi
-      );
-      context.fill();
-      context.stroke();
-      context.restore();
-
-      // draw inner arc
+        endPi,
+      });
       if (volumed) {
+        let volumeRadius, volumeWidth;
+        if (type === 'donut') {
+          volumeRadius = radius - sliceWidth / 4 + data[i].state / 2;
+          volumeWidth = sliceWidth / 2 + data[i].state;
+        }
+        if(type === 'pie'){
+          volumeRadius = radius - sliceWidth / 6 + data[i].state / 2;
+          volumeWidth = volumeRadius * 2;
+        }
+        ring.push({
+          radius: volumeRadius,
+          width: volumeWidth,
+          color: colorChangeTone(data[i].color, -50 + data[i].state),
+          x,
+          y,
+          startPi,
+          endPi,
+        });
+      }
+
+      for (let r = 0; r <= ring.length - 1; r++) {
         context.save();
         context.beginPath();
-        context.strokeStyle = colorChangeTone(
-          data[i].color,
-          -50 + data[i].state
-        );
-        context.lineWidth = sliceWidth / 2 + data[i].state;
+        context.strokeStyle = ring[r].color;
+        context.lineWidth = ring[r].width;
         context.fillStyle = 'transparent';
-        let innerRadius = radius - sliceWidth / 4;
-        if (innerRadius < 0) innerRadius = 0;
-        context.arc(x, y, innerRadius + data[i].state / 2, startPi, endPi);
+        context.arc(
+          ring[r].x,
+          ring[r].y,
+          ring[r].radius > 0 ? ring[r].radius : 0,
+          ring[r].startPi,
+          ring[r].endPi
+        );
         context.fill();
         context.stroke();
         context.restore();
