@@ -64,23 +64,24 @@ export default class Slices extends Chart {
   }
   drawSlices() {
     let { canvas, settings, data, cursor, type, state } = this,
-      { offset, slice, texts, hoverPanel } = settings,
+      { offset, slice, texts, hoverPanel, animated } = settings,
       { context, element } = canvas,
-      sideSize = Math.min(
-        element.clientHeight -
-          offset.top -
-          offset.bottom -
-          (type === 'donut' ? slice.styles.width : 0),
-        element.clientWidth -
-          offset.left -
-          offset.right -
-          (type === 'donut' ? slice.styles.width : 0)
-      ) * state.loading,
+      sideSize =
+        Math.min(
+          element.clientHeight -
+            offset.top -
+            offset.bottom -
+            (type === 'donut' ? slice.styles.width : 0),
+          element.clientWidth -
+            offset.left -
+            offset.right -
+            (type === 'donut' ? slice.styles.width : 0)
+        ) * state.loading,
       sliceWidth,
       radius,
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
-      { animated, volumed } = slice,
+      { volumed } = slice,
       hoveredValue = 20,
       piOffset = -(Math.PI / 2);
     data = this.prepareData(data);
@@ -89,10 +90,9 @@ export default class Slices extends Chart {
       radius = sideSize / 4;
     }
     if (type === 'donut') {
-      if(slice.styles.width >= sideSize){
+      if (slice.styles.width >= sideSize) {
         sliceWidth = sideSize;
-      }
-      else{
+      } else {
         sliceWidth = slice.styles.width;
       }
       radius = sideSize / 2;
@@ -123,23 +123,21 @@ export default class Slices extends Chart {
       if (data[i].hovered) {
         if (animated) {
           if (data[i].state < hoveredValue) {
-            setTimeout(() => {
-              data[i].state += 1;
-              this.render();
-            }, 1000 / 60);
+            data[i].state += 1;
+            this.render();
           }
         } else {
           data[i].state = hoveredValue;
+          this.render(0);
         }
       } else {
         if (animated) {
           if (data[i].state > 0) {
-            setTimeout(() => {
-              data[i].state -= 1;
-              this.render();
-            }, 1000 / 60);
+            data[i].state -= 1;
+            this.render();
           } else if (data[i].state <= 0) {
             data[i].state = 0;
+            this.render();
           }
         } else {
           data[i].state = 0;
@@ -163,7 +161,7 @@ export default class Slices extends Chart {
           volumeRadius = radius - sliceWidth / 4 + data[i].state / 2;
           volumeWidth = sliceWidth / 2 + data[i].state;
         }
-        if(type === 'pie'){
+        if (type === 'pie') {
           volumeRadius = radius - sliceWidth / 6 + data[i].state / 2;
           volumeWidth = volumeRadius * 2;
         }
@@ -214,7 +212,7 @@ export default class Slices extends Chart {
     }
     //draw center
     if (type === 'donut' && texts.center.enable) {
-      context.font = '800 '+20 * state.loading+'px arial';
+      context.font = '800 ' + 20 * state.loading + 'px arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = texts.center.styles.color;
@@ -289,12 +287,13 @@ export default class Slices extends Chart {
     }
   }
   render() {
+    let time = 300;
     if (this.renderTimeout) clearTimeout(this.renderTimeout);
     this.renderTimeout = setTimeout(() => {
       super.commonRender();
       this.drawBackground();
       this.drawSlices();
       this.drawHoverPanel();
-    }, 0);
+    }, time / 60);
   }
 }

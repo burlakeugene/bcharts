@@ -1,4 +1,5 @@
 export default {
+  animated: true,
   offset: {
     top: 30,
     right: 30,
@@ -11,7 +12,6 @@ export default {
     },
   },
   slice: {
-    animated: true,
     volumed: true,
     styles: {
       width: 80,

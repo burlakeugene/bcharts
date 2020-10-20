@@ -26,6 +26,22 @@ export const deepMerge = (obj1, obj2) => {
   return obj1;
 };
 
+export const deepClone = (o) => {
+  if (typeof o != 'object') {
+    return o;
+  }
+  if (!o) {
+    return o;
+  }
+  var r = o instanceof Array ? [] : {};
+  for (var i in o) {
+    if (o.hasOwnProperty(i)) {
+      r[i] = deepClone(o[i]);
+    }
+  }
+  return r;
+};
+
 export const addEventListeners = (element, events, func) => {
   events.forEach((event) => {
     element.addEventListener(event, func);

@@ -12,7 +12,7 @@ export default class Common {
     } = props;
     this.type = type;
     this.state = {
-      loading: 0
+      loading: defaultSettings.animated ? 0 : 1
     };
     this.actions = actions;
     this.canvas = {
@@ -60,14 +60,14 @@ export default class Common {
     if(this.state.loading >= 1) return;
     setTimeout(() => {
       this.state.loading += 60 / 2000;
-      this.loading();
       this.render();
+      this.loading();
     }, 1000 / 60);
   }
   commonInit() {
+    this.render();
     this.loading();
     this.commonListeners();
-    this.render();
   }
   commonListeners() {
     let { canvas } = this,
