@@ -11,9 +11,6 @@ export default class Common {
       type
     } = props;
     this.type = type;
-    this.state = {
-      loading: defaultSettings.animated ? 0 : 1
-    };
     this.actions = actions;
     this.canvas = {
       element: canvas,
@@ -27,6 +24,9 @@ export default class Common {
     this.settings = JSON.parse(JSON.stringify(defaultSettings));
     this.timeStamp = +new Date();
     this.setSettings(settings);
+    this.state = {
+      loading: this.settings.animated ? 0 : 1
+    };
     this.commonInit();
   }
   setSettings(newSettings = {}) {
