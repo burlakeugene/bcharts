@@ -21,8 +21,11 @@
   "scripts": {
     "dev": "CONFIG_NAME='dev' webpack-dev-server --mode development --open --hot",
     "dev-ip": "CONFIG_NAME='dev' webpack-dev-server --mode development --host 0.0.0.0 --hot --open",
-    "build_app": "CONFIG_NAME='prod' webpack --mode production",
-    "build_package": "CONFIG_NAME='prod' BUILD_TYPE='package' webpack --mode production"
+    "build_app": "CONFIG_NAME='prod' BUILD_TARGET='app' BUILD_TYPE='umd' webpack --mode production",
+    "build_package_commonjs2": "CONFIG_NAME='prod' BUILD_TARGET='package' BUILD_TYPE='commonjs2' webpack --mode production",
+    "build_package_dist": "CONFIG_NAME='prod' BUILD_TARGET='package' BUILD_TYPE='umd' webpack --mode production",
+    "build_package": "npm run build_package_commonjs2 & npm run build_package_dist",
+    "build": "npm run build_app & npm run build_package"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
