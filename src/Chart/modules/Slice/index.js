@@ -14,12 +14,13 @@ export default class Slices extends Chart {
     super(props);
   }
   prepareData(data = []) {
-    let sum = data.reduce(
+    let total = data.reduce(
       (acc, item) => acc + (parseFloat(item.value) || 0),
       0
     );
     data.forEach((item) => {
-      item.percent = (100 / sum) * item.value;
+      item.percent = (100 / total) * item.value;
+      item.total = total;
       item.color = item.color || generateRandomColor();
       item.state = item.state || 0;
     });
@@ -64,7 +65,7 @@ export default class Slices extends Chart {
   }
   drawSlices() {
     let { canvas, settings, data, cursor, type, state } = this,
-      { offset, slice, texts, hoverPanel, animated } = settings,
+      { offset, slice, texts, tooltip, animated } = settings,
       { context, element } = canvas,
       sideSize =
         Math.min(
@@ -110,7 +111,7 @@ export default class Slices extends Chart {
           endPi,
         }),
         mouseInPath =
-          hoverPanel.enable &&
+          tooltip.enable &&
           this.isPathHover({
             x: cursor.x,
             y: cursor.y,
@@ -124,23 +125,29 @@ export default class Slices extends Chart {
         if (animated) {
           if (data[i].state < hoveredValue) {
             data[i].state += 1;
-            this.render();
+            this.render({
+              from: 'Animated increase state',
+            });
           }
         } else {
           data[i].state = hoveredValue;
-          this.render(0);
+          this.render({
+            from: 'Increase state',
+          });
         }
       } else {
         if (animated) {
           if (data[i].state > 0) {
             data[i].state -= 1;
-            this.render();
-          } else if (data[i].state <= 0) {
-            data[i].state = 0;
-            this.render();
+            this.render({
+              from: 'Animated decrease state',
+            });
           }
         } else {
           data[i].state = 0;
+          this.render({
+            from: 'Decrease state',
+          });
         }
       }
 
@@ -219,81 +226,47 @@ export default class Slices extends Chart {
       context.fillText(texts.center.text, x, y);
     }
   }
-  drawHoverPanel() {
-    let { canvas, settings, data = [], cursor } = this,
-      { element, context } = canvas,
-      { hoverPanel } = settings,
-      hovered = data.filter((d) => {
-        return d.hovered;
+  drawTooltip() {
+    let texts = [],
+      hovered = this.data.find((item) => {
+        return item.hovered;
       });
-    hovered = hovered.length ? hovered[0] : false;
-    if (hovered && hoverPanel && hoverPanel.enable) {
-      let texts = [
-        hovered.label,
-        hovered.value,
-        parseFloat(hovered.percent.toFixed(2)) + '%',
-      ];
-      context.font = '100 12px arial';
-      let width =
-          Math.max(
-            ...texts.map((text) => {
-              return context.measureText(text).width;
-            })
-          ) + 14,
-        height = 18 * texts.length,
-        leftCenter = cursor.x,
-        topOffset = 10,
-        left = cursor.x - width / 2,
-        invert = false,
-        top = cursor.y - height - topOffset;
-      if (top < 0) {
-        invert = true;
-        top = cursor.y + topOffset;
-      }
-      if (left + width > element.clientWidth) {
-        left = element.clientWidth - width;
-      }
-      if (left < 0) left = 0;
-      context.strokeStyle = context.fillStyle = hoverPanel.styles.background;
-      context.beginPath();
-      if (invert) {
-        context.moveTo(leftCenter, top - 5);
-        context.lineTo(leftCenter - 5, top);
-        context.lineTo(leftCenter + 5, top);
-      } else {
-        context.moveTo(leftCenter, top + height + 5);
-        context.lineTo(leftCenter - 5, top + height);
-        context.lineTo(leftCenter + 5, top + height);
-      }
-      context.fill();
-      context.stroke();
-      context.beginPath();
-      context.roundRect(
-        left,
-        top,
-        width,
-        height,
-        hoverPanel.styles.borderRadius
-      );
-      context.fill();
-      context.stroke();
-      context.font = '100 12px arial';
-      context.textAlign = 'left';
-      context.textBaseline = 'middle';
-      context.fillStyle = hoverPanel.styles.color;
-      texts.forEach((text, i) => {
-        context.fillText(text, left + 7, top + 14 * (i + 1));
+    if (hovered) {
+      super.drawTooltip({
+        title: {
+          text: hovered.label,
+        },
+        elements: [
+          {
+            colorPanel: {
+              color: hovered.color,
+            },
+            texts: [
+              {
+                text: 'Value: ' + hovered.value,
+              },
+              {
+                text: 'Percent: ' + hovered.percent.toFixed(2) + '%',
+              },
+            ],
+            footer: {
+              text: 'Total: '+hovered.total,
+            },
+          },
+        ],
+        render: (obj) => {},
       });
     }
   }
-  render() {
+  render(info = {}) {
     let time = 300;
     if (this.renderTimeout) clearTimeout(this.renderTimeout);
+    // console.log('render ' + info.from);
     this.renderTimeout = setTimeout(() => {
       super.commonRender();
       this.drawBackground();
       this.drawSlices();
-      this.drawHoverPanel();
+      this.drawTooltip();
     }, time / 60);
   }
 }

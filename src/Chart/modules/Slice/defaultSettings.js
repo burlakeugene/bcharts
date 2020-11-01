@@ -33,12 +33,20 @@ export default {
       },
     },
   },
-  hoverPanel: {
+  tooltip: {
     enable: true,
     styles: {
-      color: '#fff',
-      background: '#954ce9',
+      color: '#ffffff',
+      background: '#403f4c',
+      borderColor: '#ffffff',
       borderRadius: 2,
+      fontSize: 12,
+      padding: {
+        top: 10,
+        right: 10,
+        bottom: 10,
+        left: 10,
+      },
     },
-  }
+  },
 };

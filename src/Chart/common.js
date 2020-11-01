@@ -112,7 +112,7 @@ export const getIntersection = ({ A, B, C, D }) => {
     return v1 * v2 < 0 && v3 * v4 < 0;
   })();
   return result;
-}
+};
 
 export const getContrastColor = (hex, bw) => {
   if (hex.indexOf('#') === 0) {
@@ -134,4 +134,8 @@ export const getContrastColor = (hex, bw) => {
   g = (255 - g).toString(16);
   b = (255 - b).toString(16);
   return '#' + padZero(r) + padZero(g) + padZero(b);
+};
+
+export const isFunction = (func) => {
+  return {}.toString.call(func) === '[object Function]';
 };
