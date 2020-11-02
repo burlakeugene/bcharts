@@ -109,7 +109,7 @@ export default class Chart {
       });
     });
   }
-  drawTooltip({ title = '', elements = [], x, y, render } = {}) {
+  drawTooltip({ title = '', panels = [], x, y, render } = {}) {
     let { canvas, settings, data = [], cursor } = this,
       { element, context } = canvas,
       { tooltip } = settings,
@@ -124,52 +124,73 @@ export default class Chart {
           let width = 0,
             height = 0;
           if (title && title.text) {
-            let currentWidth = context.measureText(title.text).width;
-            if (width < currentWidth) width = currentWidth;
+            title.width =
+              context.measureText(title.text).width +
+              styles.padding.left +
+              styles.padding.right;
             title.height = styles.padding.top * 2 + styles.fontSize * 1.286;
+            title.x = styles.padding.left;
             title.y = title.height / 2;
-            height += title.height;
           }
-          if (elements.length) {
-            elements.forEach((element) => {
-              if (element.colorPanel && element.colorPanel.color) {
-                element.colorPanel.height = 5;
-                element.colorPanel.y = height;
-                height += 5;
+          if (panels.length) {
+            panels.forEach((panel, index) => {
+              panel.width = 0;
+              panel.height = 0;
+              panel.x = (() => {
+                let prevWidth = 0;
+                for (let i = index - 1; i >= 0; i--) {
+                  prevWidth += panels[i].width;
+                }
+                return prevWidth;
+              })();
+              panel.y = title.height;
+              if (panel.colorPanel && panel.colorPanel.color) {
+                panel.colorPanel.height = 5;
+                panel.colorPanel.x = panel.x;
+                panel.colorPanel.y = panel.y;
+                panel.height += panel.colorPanel.height;
               }
-              if (element.texts) {
-                element.texts.forEach((text, index) => {
+              if (panel.texts) {
+                panel.texts.forEach((text, index) => {
                   if (text.text) {
                     let currentWidth = context.measureText(text.text).width;
-                    if (width < currentWidth) width = currentWidth;
+                    if (panel.width < currentWidth) panel.width = currentWidth;
                     text.height = styles.fontSize * 1.286;
-                    text.y = height + text.height / 2;
+                    text.x = panel.x + styles.padding.left;
+                    text.y = panel.y + panel.height + text.height / 2;
                     if (!index) {
                       text.height += styles.padding.top;
                       text.y += styles.padding.top;
                     }
-                    if (index === element.texts.length - 1) {
+                    if (index === panel.texts.length - 1) {
                       text.height += styles.padding.bottom;
                     }
-                    height += text.height;
+                    panel.height += text.height;
                   }
                 });
               }
-              if (element.footer && element.footer.text) {
-                let currentWidth = context.measureText(element.footer.text)
-                  .width;
-                if (width < currentWidth) width = currentWidth;
-                element.footer.height =
+              if (panel.footer && panel.footer.text) {
+                let currentWidth = context.measureText(panel.footer.text).width;
+                if (panel.width < currentWidth) panel.width = currentWidth;
+                panel.footer.height =
                   styles.padding.bottom + styles.fontSize * 1.286;
-                element.footer.y =
-                  height +
-                  element.footer.height / 2 -
+                panel.footer.x = panel.x + styles.padding.left;
+                panel.footer.y =
+                  panel.y +
+                  panel.height +
+                  panel.footer.height / 2 -
                   styles.padding.bottom / 2;
-                height += element.footer.height;
+                panel.height += panel.footer.height;
               }
+              panel.width += styles.padding.left + styles.padding.right;
             });
           }
-          width += styles.padding.left + styles.padding.right;
+          height =
+            title.height + Math.max(...panels.map((panel) => panel.height));
+          width = Math.max(
+            title.width,
+            panels.reduce((acc, panel) => acc + panel.width, 0)
+          );
           return {
             width,
             height,
@@ -184,12 +205,13 @@ export default class Chart {
         invert = true;
         top = y + topOffset;
       }
-      if (left + width > element.clientWidth - styles.borderWidth) {
-        left = element.clientWidth - width - styles.borderWidth;
+      if (left + width > element.clientWidth - styles.borderWidth / 2) {
+        left = element.clientWidth - width - styles.borderWidth / 2;
       }
-      if (left < styles.borderWidth) left = styles.borderWidth;
+      if (left < styles.borderWidth / 2) left = styles.borderWidth / 2;
       context.fillStyle = styles.background;
-      context.strokeStyle = styles.borderColor;
+      context.strokeStyle =
+        styles.borderWidth > 0 ? styles.borderColor : 'transparent';
       context.lineWidth = styles.borderWidth;
       context.beginPath();
       context.roundRect(left, top, width, height, styles.borderRadius);
@@ -197,79 +219,64 @@ export default class Chart {
       context.stroke();
       context.fill();
 
-      context.beginPath();
       if (invert) {
+        context.beginPath();
         context.moveTo(center - 5, top);
         context.lineTo(center, top - 5);
         context.lineTo(center + 5, top);
-        context.lineTo(center + 10, top + 5);
-        context.lineTo(center - 10, top + 5);
+        context.stroke();
+        context.fill();
+        context.save();
+        context.beginPath();
+        context.rect(center - 5, top, 10, 10);
+        context.fill();
+        context.restore();
       } else {
+        context.beginPath();
         context.moveTo(center - 5, top + height);
         context.lineTo(center, top + height + 5);
         context.lineTo(center + 5, top + height);
-        context.lineTo(center + 10, top + height - 5);
-        context.lineTo(center - 10, top + height - 5);
+        context.stroke();
+        context.fill();
+        context.save();
+        context.beginPath();
+        context.rect(center - 5, top + height - 10, 10, 10);
+        context.fill();
+        context.restore();
       }
-      context.closePath();
-      context.stroke();
-      context.fill();
-
-      context.save();
-      context.beginPath();
-      context.lineWidth = 0;
-      context.strokeStyle = styles.background;
-      if (invert) {
-        context.rect(
-          left + styles.borderWidth + styles.borderRadius,
-          top + styles.borderWidth / 2,
-          width - styles.borderWidth * 2 - styles.borderRadius * 2,
-          10
-        );
-      } else {
-        context.rect(
-          left + styles.borderWidth + styles.borderRadius,
-          top + height - 10 - styles.borderWidth / 2,
-          width - styles.borderWidth * 2 - styles.borderRadius * 2,
-          10
-        );
-      }
-      context.fill();
-      context.stroke();
-      context.restore();
 
       context.fillStyle = styles.color;
       if (title && title.text) {
-        context.fillText(title.text, left + styles.padding.left, top + title.y);
+        context.fillText(title.text, left + title.x, top + title.y);
       }
-      elements.forEach((element) => {
+      panels.forEach((panel) => {
         context.fillStyle = styles.color;
-        if (element.colorPanel && element.colorPanel.color) {
+        if (panel.colorPanel && panel.colorPanel.color) {
           context.save();
-          context.fillStyle = element.colorPanel.color;
+          context.fillStyle = panel.colorPanel.color;
           context.beginPath();
-          context.rect(left, top + element.colorPanel.y, width, 3);
+          context.rect(
+            left + panel.colorPanel.x,
+            top + panel.colorPanel.y,
+            panel.width,
+            3
+          );
           context.fill();
           context.restore();
         }
-        if (element.texts) {
-          element.texts.forEach((text, i) => {
+        if (panel.texts) {
+          panel.texts.forEach((text, i) => {
             if (text.text) {
-              context.fillText(
-                text.text,
-                left + styles.padding.left,
-                top + text.y
-              );
+              context.fillText(text.text, left + text.x, top + text.y);
             }
           });
         }
-
-        if (element.footer && element.footer.text) {
+        if (panel.footer && panel.footer.text) {
           context.fillStyle = colorChangeTone(styles.color, -50);
           context.fillText(
-            element.footer.text,
-            left + styles.padding.left,
-            top + element.footer.y
+            panel.footer.text,
+            left + panel.footer.x,
+            top + panel.footer.y
           );
         }
       });

@@ -106,8 +106,8 @@ export default class Slices extends Chart {
       let polygon = this.generatePolygon({
           x,
           y,
-          radius,
-          sliceWidth,
+          radius: radius + data[i].state / 2,
+          sliceWidth: sliceWidth + data[i].state,
           startPi,
           endPi,
         }),
@@ -237,7 +237,7 @@ export default class Slices extends Chart {
         title: {
           text: hovered.label,
         },
-        elements: [
+        panels: [
           {
             colorPanel: {
               color: hovered.color,

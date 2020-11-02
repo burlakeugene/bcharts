@@ -39,8 +39,8 @@ export default {
       color: '#ffffff',
       background: '#403f4c',
       borderColor: '#403f4c',
-      borderWidth: 2,
-      borderRadius: 5,
+      borderWidth: 0,
+      borderRadius: 3,
       fontSize: 12,
       padding: {
         top: 10,
