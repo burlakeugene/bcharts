@@ -100,7 +100,8 @@ export default class Slices extends Chart {
     }
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
-        endPi = (2 * Math.PI * data[i].percent) / 100 + piOffset;
+        endPi =
+          (2 * Math.PI * state.loading * data[i].percent) / 100 + piOffset;
       piOffset = endPi;
       let polygon = this.generatePolygon({
           x,
@@ -250,7 +251,7 @@ export default class Slices extends Chart {
               },
             ],
             footer: {
-              text: 'Total: '+hovered.total,
+              text: 'Total: ' + hovered.total,
             },
           },
         ],

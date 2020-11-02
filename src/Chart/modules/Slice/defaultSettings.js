@@ -38,8 +38,9 @@ export default {
     styles: {
       color: '#ffffff',
       background: '#403f4c',
-      borderColor: '#ffffff',
-      borderRadius: 2,
+      borderColor: '#403f4c',
+      borderWidth: 2,
+      borderRadius: 5,
       fontSize: 12,
       padding: {
         top: 10,

@@ -64,6 +64,7 @@ export default class Chart {
     if (this.state.loading >= 1) return;
     setTimeout(() => {
       this.state.loading += 60 / 2000;
+      this.state.loading = this.state.loading > 1 ? 1 : this.state.loading;
       this.render({
         from: 'loading',
       });
@@ -179,21 +180,22 @@ export default class Chart {
         left = x - width / 2,
         invert = false,
         top = y - height - topOffset;
-      if (top < 0) {
+      if (top < styles.borderWidth) {
         invert = true;
         top = y + topOffset;
       }
-      if (left + width > element.clientWidth) {
-        left = element.clientWidth - width;
+      if (left + width > element.clientWidth - styles.borderWidth) {
+        left = element.clientWidth - width - styles.borderWidth;
       }
-      if (left < 0) left = 0;
+      if (left < styles.borderWidth) left = styles.borderWidth;
       context.fillStyle = styles.background;
       context.strokeStyle = styles.borderColor;
-      context.lineWidth = 1;
+      context.lineWidth = styles.borderWidth;
       context.beginPath();
       context.roundRect(left, top, width, height, styles.borderRadius);
-      context.fill();
+      context.closePath();
       context.stroke();
+      context.fill();
 
       context.beginPath();
       if (invert) {
@@ -201,24 +203,36 @@ export default class Chart {
         context.lineTo(center, top - 5);
         context.lineTo(center + 5, top);
         context.lineTo(center + 10, top + 5);
+        context.lineTo(center - 10, top + 5);
       } else {
         context.moveTo(center - 5, top + height);
         context.lineTo(center, top + height + 5);
         context.lineTo(center + 5, top + height);
         context.lineTo(center + 10, top + height - 5);
+        context.lineTo(center - 10, top + height - 5);
       }
-      context.fill();
+      context.closePath();
       context.stroke();
+      context.fill();
 
       context.save();
       context.beginPath();
       context.lineWidth = 0;
       context.strokeStyle = styles.background;
-      if(invert){
-        context.rect(left + 2, top + 1, width - 4, 10);
-      }
-      else{
-        context.rect(left + 2, top + height - 11, width - 4, 10);
+      if (invert) {
+        context.rect(
+          left + styles.borderWidth + styles.borderRadius,
+          top + styles.borderWidth / 2,
+          width - styles.borderWidth * 2 - styles.borderRadius * 2,
+          10
+        );
+      } else {
+        context.rect(
+          left + styles.borderWidth + styles.borderRadius,
+          top + height - 10 - styles.borderWidth / 2,
+          width - styles.borderWidth * 2 - styles.borderRadius * 2,
+          10
+        );
       }
       context.fill();
       context.stroke();
