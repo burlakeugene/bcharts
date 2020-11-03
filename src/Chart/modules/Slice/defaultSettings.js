@@ -20,13 +20,13 @@ export default {
   },
   texts: {
     center: {
-      enable: true,
+      enable: false,
       text: '100%',
       styles: {
         color: '#fff',
       },
     },
-    partPercent: {
+    slicePercent: {
       enable: false,
       styles: {
         color: '#fff',

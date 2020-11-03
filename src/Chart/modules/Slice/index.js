@@ -102,6 +102,8 @@ export default class Slices extends Chart {
       let startPi = piOffset,
         endPi =
           (2 * Math.PI * state.loading * data[i].percent) / 100 + piOffset;
+      data[i].startPi = startPi;
+      data[i].endPi = endPi;
       piOffset = endPi;
       let polygon = this.generatePolygon({
           x,
@@ -201,25 +203,38 @@ export default class Slices extends Chart {
         context.stroke();
         context.restore();
       }
-
-      //draw percent
-      if (texts.partPercent.enable) {
+    }
+    if (texts.slicePercent.enable) {
+      for (let i = 0; i <= data.length - 1; i++) {
         context.font = '100 10px arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillStyle = texts.partPercent.styles.color;
+        context.fillStyle = texts.slicePercent.styles.color;
+        let percentRadius = radius;
+        if (type === 'donut' && volumed) {
+          percentRadius += sliceWidth / 4 + data[i].state;
+        }
+        if (type === 'donut' && !volumed) {
+          percentRadius += data[i].state / 2;
+        }
+        if (type === 'pie' && volumed) {
+          percentRadius += sliceWidth / 3 + data[i].state;
+        }
+        if (type === 'pie' && !volumed) {
+          percentRadius += data[i].state / 2;
+        }
         let pointText = parseFloat(data[i].percent.toFixed(2)) + '%',
           point = getPointOnArc(
             x,
             y,
-            radius + sliceWidth,
-            (startPi + endPi) / 2
+            percentRadius,
+            (data[i].startPi + data[i].endPi) / 2
           );
         context.fillText(pointText, point.x, point.y);
       }
     }
     //draw center
-    if (type === 'donut' && texts.center.enable) {
+    if (texts.center.enable) {
       context.font = '800 ' + 20 * state.loading + 'px arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
