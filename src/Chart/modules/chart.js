@@ -189,16 +189,18 @@ export default class Chart {
             let panelWidth = title.width / panels.length,
               minCount = 0,
               oversizeWidth = 0;
-            for(let i = 0; i <= panels.length - 1; i++){
-              if(panels[i].width >= panelWidth){
+            for (let i = 0; i <= panels.length - 1; i++) {
+              if (panels[i].width >= panelWidth) {
                 oversizeWidth += panels[i].width - panelWidth;
-              }
-              else{
+              } else {
                 minCount++;
               }
             }
-            for(let i = 0; i <= panels.length - 1; i++){
-              panels[i].width = panels[i].width < panelWidth ? panelWidth - oversizeWidth / minCount : panels[i].width;
+            for (let i = 0; i <= panels.length - 1; i++) {
+              panels[i].width =
+                panels[i].width < panelWidth
+                  ? panelWidth - oversizeWidth / minCount
+                  : panels[i].width;
               panels[i].x = (() => {
                 let prevWidth = 0;
                 for (let j = i - 1; j >= 0; j--) {

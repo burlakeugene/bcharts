@@ -243,10 +243,9 @@ export default class Slices extends Chart {
     }
   }
   drawTooltip() {
-    let texts = [],
-      hovered = this.data.find((item) => {
-        return item.hovered;
-      });
+    let hovered = this.data.find((item) => {
+      return item.hovered;
+    });
     if (hovered) {
       super.drawTooltip({
         title: {
