@@ -146,8 +146,8 @@ export default class Chart {
               panel.y = title.height;
               if (panel.colorPanel && panel.colorPanel.color) {
                 panel.colorPanel.height = 5;
-                panel.colorPanel.x = panel.x;
-                panel.colorPanel.y = panel.y;
+                panel.colorPanel.x = 0;
+                panel.colorPanel.y = 0;
                 panel.height += panel.colorPanel.height;
               }
               if (panel.texts) {
@@ -156,8 +156,8 @@ export default class Chart {
                     let currentWidth = context.measureText(text.text).width;
                     if (panel.width < currentWidth) panel.width = currentWidth;
                     text.height = styles.fontSize * 1.286;
-                    text.x = panel.x + styles.padding.left;
-                    text.y = panel.y + panel.height + text.height / 2;
+                    text.x = styles.padding.left;
+                    text.y = panel.height + text.height / 2;
                     if (!index) {
                       text.height += styles.padding.top;
                       text.y += styles.padding.top;
@@ -174,9 +174,8 @@ export default class Chart {
                 if (panel.width < currentWidth) panel.width = currentWidth;
                 panel.footer.height =
                   styles.padding.bottom + styles.fontSize * 1.286;
-                panel.footer.x = panel.x + styles.padding.left;
+                panel.footer.x = styles.padding.left;
                 panel.footer.y =
-                  panel.y +
                   panel.height +
                   panel.footer.height / 2 -
                   styles.padding.bottom / 2;
@@ -185,12 +184,28 @@ export default class Chart {
               panel.width += styles.padding.left + styles.padding.right;
             });
           }
+          let panelsWidth = panels.reduce((acc, panel) => acc + panel.width, 0);
+          // if (title.width > panelsWidth) {
+          //   let totalWidth = 0;
+          //   panels.forEach((panel, index) => {
+          //     let panelWidth =
+          //       (title.width - totalWidth) / (panels.length - index);
+          //     if (panel.width < panelWidth) {
+          //       panel.width = panelWidth;
+          //     }
+          //     panel.x = (() => {
+          //       let prevWidth = 0;
+          //       for (let i = index - 1; i >= 0; i--) {
+          //         prevWidth += panels[i].width;
+          //       }
+          //       return prevWidth;
+          //     })();
+          //     totalWidth += panel.width;
+          //   });
+          // }
           height =
             title.height + Math.max(...panels.map((panel) => panel.height));
-          width = Math.max(
-            title.width,
-            panels.reduce((acc, panel) => acc + panel.width, 0)
-          );
+          width = Math.max(title.width, panelsWidth);
           return {
             width,
             height,
@@ -256,8 +271,8 @@ export default class Chart {
           context.fillStyle = panel.colorPanel.color;
           context.beginPath();
           context.rect(
-            left + panel.colorPanel.x,
-            top + panel.colorPanel.y,
+            left + panel.x + panel.colorPanel.x,
+            top + panel.y + panel.colorPanel.y,
             panel.width,
             3
           );
@@ -267,7 +282,11 @@ export default class Chart {
         if (panel.texts) {
           panel.texts.forEach((text, i) => {
             if (text.text) {
-              context.fillText(text.text, left + text.x, top + text.y);
+              context.fillText(
+                text.text,
+                left + panel.x + text.x,
+                top + panel.y + text.y
+              );
             }
           });
         }
@@ -275,8 +294,8 @@ export default class Chart {
           context.fillStyle = colorChangeTone(styles.color, -50);
           context.fillText(
             panel.footer.text,
-            left + panel.footer.x,
-            top + panel.footer.y
+            left + panel.x + panel.footer.x,
+            top + panel.y + panel.footer.y
           );
         }
       });
