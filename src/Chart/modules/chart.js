@@ -185,24 +185,29 @@ export default class Chart {
             });
           }
           let panelsWidth = panels.reduce((acc, panel) => acc + panel.width, 0);
-          // if (title.width > panelsWidth) {
-          //   let totalWidth = 0;
-          //   panels.forEach((panel, index) => {
-          //     let panelWidth =
-          //       (title.width - totalWidth) / (panels.length - index);
-          //     if (panel.width < panelWidth) {
-          //       panel.width = panelWidth;
-          //     }
-          //     panel.x = (() => {
-          //       let prevWidth = 0;
-          //       for (let i = index - 1; i >= 0; i--) {
-          //         prevWidth += panels[i].width;
-          //       }
-          //       return prevWidth;
-          //     })();
-          //     totalWidth += panel.width;
-          //   });
-          // }
+          if (title.width > panelsWidth) {
+            let panelWidth = title.width / panels.length,
+              minCount = 0,
+              oversizeWidth = 0;
+            for(let i = 0; i <= panels.length - 1; i++){
+              if(panels[i].width >= panelWidth){
+                oversizeWidth += panels[i].width - panelWidth;
+              }
+              else{
+                minCount++;
+              }
+            }
+            for(let i = 0; i <= panels.length - 1; i++){
+              panels[i].width = panels[i].width < panelWidth ? panelWidth - oversizeWidth / minCount : panels[i].width;
+              panels[i].x = (() => {
+                let prevWidth = 0;
+                for (let j = i - 1; j >= 0; j--) {
+                  prevWidth += panels[j].width;
+                }
+                return prevWidth;
+              })();
+            }
+          }
           height =
             title.height + Math.max(...panels.map((panel) => panel.height));
           width = Math.max(title.width, panelsWidth);
