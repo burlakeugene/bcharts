@@ -17,6 +17,10 @@ export default {
       width: 80,
       color: '#fff',
     },
+    hover: {
+      enable: true,
+      value: 20
+    }
   },
   texts: {
     center: {

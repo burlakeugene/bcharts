@@ -26,14 +26,6 @@ export default class Slices extends Chart {
     });
     return data;
   }
-  drawBackground() {
-    let { canvas, settings } = this,
-      { view } = settings,
-      { context, element } = canvas,
-      { background } = view.styles;
-    context.fillStyle = background;
-    context.fillRect(0, 0, element.width, element.height);
-  }
   generatePolygon({ count = 20, x, y, radius, sliceWidth, startPi, endPi }) {
     let polygon = [],
       temp = (endPi - startPi) / count;
@@ -83,7 +75,7 @@ export default class Slices extends Chart {
       x = element.clientWidth / 2 + offset.left - offset.right,
       y = element.clientHeight / 2 + offset.top - offset.bottom,
       { volumed } = slice,
-      hoveredValue = 20,
+      hoveredValue = slice?.hover?.value,
       piOffset = -(Math.PI / 2);
     data = this.prepareData(data);
     if (type === 'pie') {
@@ -113,18 +105,16 @@ export default class Slices extends Chart {
           startPi,
           endPi,
         }),
-        mouseInPath =
-          tooltip.enable &&
-          this.isPathHover({
-            x: cursor.x,
-            y: cursor.y,
-            polygon,
-          });
+        mouseInPath = this.isPathHover({
+          x: cursor.x,
+          y: cursor.y,
+          polygon,
+        });
       data[i].polygon = polygon;
       data[i].hovered = mouseInPath;
 
       //change color on hover
-      if (data[i].hovered) {
+      if (data[i].hovered && slice?.hover?.enable) {
         if (animated) {
           if (data[i].state < hoveredValue) {
             data[i].state += 1;
@@ -278,8 +268,7 @@ export default class Slices extends Chart {
     if (this.renderTimeout) clearTimeout(this.renderTimeout);
     // console.log('render ' + info.from);
     this.renderTimeout = setTimeout(() => {
-      super.commonRender();
-      this.drawBackground();
+      super.baseRender();
       this.drawSlices();
       this.drawTooltip();
     }, time / 60);

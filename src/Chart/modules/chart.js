@@ -322,8 +322,17 @@ export default class Chart {
       }
     }
   }
-  commonRender() {
+  drawBackground() {
+    let { canvas, settings } = this,
+      { view } = settings,
+      { context, element } = canvas,
+      { background } = view.styles;
+    context.fillStyle = background;
+    context.fillRect(0, 0, element.width, element.height);
+  }
+  baseRender() {
     this.setRatio();
     this.clearCanvas();
+    this.drawBackground();
   }
 }
