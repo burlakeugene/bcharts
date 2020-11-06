@@ -1,16 +1,23 @@
-import { Line, Donut, Pie } from '../package';
+import { Plot, Donut, Pie } from '../package';
 import './styles.scss';
 window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      chart = new Line({
-        canvas,
-        actions: {
-          mouseOverPoint: (point) => {},
-          mouseEnterLine: () => {},
-          mouseLeaveLine: () => {},
+      chart = new Plot({
+        data: {
+          labels: ['first', 'second', 'third'],
+          data: [{
+            name: 'Some line data',
+            type: 'line',
+            values: [1, 2, 10]
+          }, {
+            name: 'Some bar data',
+            type: 'bar',
+            values: [5, -4, 3]
+          }]
         },
+        canvas,
       });
   });
   let donutCharts = document.querySelectorAll('.chart-donut');

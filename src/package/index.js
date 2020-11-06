@@ -1,7 +1,7 @@
-import { Line, Donut, Pie } from '../Chart';
-export { Line, Donut, Pie };
+import { Plot, Donut, Pie } from '../Chart';
+export { Plot, Donut, Pie };
 window.bChart = {
-  Line,
+  Plot,
   Donut,
   Pie,
 };

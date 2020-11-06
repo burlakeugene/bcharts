@@ -9,12 +9,12 @@ import {
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
 
-export default class Line extends Chart {
-  constructor(props){
+export default class Plot extends Chart {
+  constructor(props) {
     props.defaultSettings = defaultSettings;
     super(props);
   }
-  render(){
+  render() {
     super.baseRender();
   }
 }
