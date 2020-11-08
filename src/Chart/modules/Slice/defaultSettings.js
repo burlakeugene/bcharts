@@ -6,11 +6,6 @@ export default {
     bottom: 30,
     left: 30,
   },
-  view: {
-    styles: {
-      background: '#1a1e30',
-    },
-  },
   slice: {
     volumed: true,
     styles: {
@@ -27,30 +22,15 @@ export default {
       enable: false,
       text: '100%',
       styles: {
-        color: '#fff',
+        color: '#ffffff',
+        fontSize: 30,
       },
     },
     slicePercent: {
       enable: false,
       styles: {
-        color: '#fff',
-      },
-    },
-  },
-  tooltip: {
-    enable: true,
-    styles: {
-      color: '#ffffff',
-      background: '#403f4c',
-      borderColor: '#403f4c',
-      borderWidth: 0,
-      borderRadius: 3,
-      fontSize: 12,
-      padding: {
-        top: 10,
-        right: 10,
-        bottom: 10,
-        left: 10,
+        color: '#ffffff',
+        fontSize: 10,
       },
     },
   },

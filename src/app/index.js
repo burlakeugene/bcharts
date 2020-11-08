@@ -6,16 +6,33 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Plot({
         data: {
-          labels: ['first', 'second', 'third'],
-          data: [{
-            name: 'Some line data',
-            type: 'line',
-            values: [1, 2, 10]
-          }, {
-            name: 'Some bar data',
-            type: 'bar',
-            values: [5, -4, 3]
-          }]
+          labels: ['First', 'Second', 'Third'],
+          datasets: [
+            {
+              name: 'Some line data',
+              type: 'line',
+              values: (() => {
+                let length = 10;
+                let array = [];
+                for (let i = 0; i <= length; i++) {
+                  array.push(Math.random() * -1);
+                }
+                return array;
+              })(),
+            },
+            {
+              name: 'Some bar data',
+              type: 'line',
+              values: (() => {
+                let length = 10;
+                let array = [];
+                for (let i = 0; i <= length; i++) {
+                  array.push(Math.random());
+                }
+                return array;
+              })(),
+            },
+          ],
         },
         canvas,
       });
@@ -30,7 +47,7 @@ window.addEventListener('load', () => {
           for (let i = 0; i <= Math.random() * 10; i++) {
             result.push({
               value: Math.random().toFixed(2),
-              label: 'Label ' + i
+              label: 'Label ' + i,
             });
           }
           return result;
@@ -47,7 +64,7 @@ window.addEventListener('load', () => {
           for (let i = 0; i <= Math.random() * 10; i++) {
             result.push({
               value: Math.random().toFixed(2),
-              label: 'Label ' + i
+              label: 'Label ' + i,
             });
           }
           return result;

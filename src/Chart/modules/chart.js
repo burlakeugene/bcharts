@@ -1,5 +1,5 @@
-import { deepMerge, isFunction, colorChangeTone } from '../common';
-
+import { deepMerge, deepClone, isFunction, colorChangeTone } from '../common';
+import commonDefaultSettings from './commonDefaultSettings';
 export default class Chart {
   constructor(props) {
     let {
@@ -19,15 +19,21 @@ export default class Chart {
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
         canvas.tagName.toLowerCase() === 'canvas',
     };
-    this.data = data;
+    this.data = this.prepareData(data);
     this.cursor = { x: 0, y: 0 };
-    this.settings = JSON.parse(JSON.stringify(defaultSettings));
+    this.settings = deepMerge(
+      deepClone(commonDefaultSettings),
+      deepClone(defaultSettings)
+    );
     this.timeStamp = +new Date();
     this.setSettings(settings);
     this.state = {
       loading: this.settings.animated ? 0 : 1,
     };
     this.commonInit();
+  }
+  prepareData(data) {
+    return data;
   }
   setSettings(newSettings = {}) {
     deepMerge(this.settings, newSettings);
@@ -39,7 +45,7 @@ export default class Chart {
     return this.settings;
   }
   setData(data) {
-    this.data = data;
+    this.data = this.prepareData(data);
     this.render({
       from: 'setData',
     });
@@ -127,10 +133,14 @@ export default class Chart {
             title.width =
               context.measureText(title.text).width +
               styles.padding.left +
-              styles.padding.right;
-            title.height = styles.padding.top * 2 + styles.fontSize * 1.286;
-            title.x = styles.padding.left;
-            title.y = title.height / 2;
+              styles.padding.right +
+              styles.borderWidth;
+            title.height =
+              styles.padding.top * 2 +
+              styles.fontSize * 1.286 +
+              styles.borderWidth / 2;
+            title.x = styles.padding.left + styles.borderWidth / 2;
+            title.y = title.height / 2 + styles.borderWidth / 2;
           }
           if (panels.length) {
             panels.forEach((panel, index) => {
@@ -145,18 +155,19 @@ export default class Chart {
               })();
               panel.y = title.height;
               if (panel.colorPanel && panel.colorPanel.color) {
-                panel.colorPanel.height = 5;
-                panel.colorPanel.x = 0;
+                panel.colorPanel.height = 3;
+                panel.colorPanel.x = styles.borderWidth / 2;
                 panel.colorPanel.y = 0;
                 panel.height += panel.colorPanel.height;
               }
               if (panel.texts) {
                 panel.texts.forEach((text, index) => {
                   if (text.text) {
-                    let currentWidth = context.measureText(text.text).width;
+                    let currentWidth =
+                      context.measureText(text.text).width + styles.borderWidth;
                     if (panel.width < currentWidth) panel.width = currentWidth;
                     text.height = styles.fontSize * 1.286;
-                    text.x = styles.padding.left;
+                    text.x = styles.padding.left + styles.borderWidth / 2;
                     text.y = panel.height + text.height / 2;
                     if (!index) {
                       text.height += styles.padding.top;
@@ -170,16 +181,18 @@ export default class Chart {
                 });
               }
               if (panel.footer && panel.footer.text) {
-                let currentWidth = context.measureText(panel.footer.text).width;
+                let currentWidth =
+                  context.measureText(panel.footer.text).width +
+                  styles.borderWidth;
                 if (panel.width < currentWidth) panel.width = currentWidth;
                 panel.footer.height =
                   styles.padding.bottom + styles.fontSize * 1.286;
-                panel.footer.x = styles.padding.left;
+                panel.footer.x = styles.padding.left + styles.borderWidth / 2;
                 panel.footer.y =
                   panel.height +
                   panel.footer.height / 2 -
                   styles.padding.bottom / 2;
-                panel.height += panel.footer.height;
+                panel.height += panel.footer.height + styles.borderWidth / 2;
               }
               panel.width += styles.padding.left + styles.padding.right;
             });
@@ -238,33 +251,44 @@ export default class Chart {
       context.beginPath();
       context.roundRect(left, top, width, height, styles.borderRadius);
       context.closePath();
-      context.stroke();
       context.fill();
-
+      context.stroke();
       if (invert) {
         context.beginPath();
         context.moveTo(center - 5, top);
         context.lineTo(center, top - 5);
         context.lineTo(center + 5, top);
+        context.fill();
         context.stroke();
-        context.fill();
-        context.save();
         context.beginPath();
-        context.rect(center - 5, top, 10, 10);
+        context.moveTo(
+          center - 5 + styles.borderWidth / 4,
+          top + styles.borderWidth / 2
+        );
+        context.lineTo(center, top - 5 + styles.borderWidth / 1.5);
+        context.lineTo(
+          center + 5 - styles.borderWidth / 4,
+          top + styles.borderWidth / 2
+        );
         context.fill();
-        context.restore();
       } else {
         context.beginPath();
         context.moveTo(center - 5, top + height);
         context.lineTo(center, top + height + 5);
         context.lineTo(center + 5, top + height);
+        context.fill();
         context.stroke();
-        context.fill();
-        context.save();
         context.beginPath();
-        context.rect(center - 5, top + height - 10, 10, 10);
+        context.moveTo(
+          center - 5 + styles.borderWidth / 4,
+          top + height - styles.borderWidth / 2
+        );
+        context.lineTo(center, top + height + 5 - styles.borderWidth / 1.5);
+        context.lineTo(
+          center + 5 - styles.borderWidth / 4,
+          top + height - styles.borderWidth / 2
+        );
         context.fill();
-        context.restore();
       }
 
       context.fillStyle = styles.color;
@@ -280,8 +304,8 @@ export default class Chart {
           context.rect(
             left + panel.x + panel.colorPanel.x,
             top + panel.y + panel.colorPanel.y,
-            panel.width,
-            3
+            panel.width - styles.borderWidth,
+            panel.colorPanel.height
           );
           context.fill();
           context.restore();

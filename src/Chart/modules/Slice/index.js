@@ -196,7 +196,7 @@ export default class Slices extends Chart {
     }
     if (texts.slicePercent.enable) {
       for (let i = 0; i <= data.length - 1; i++) {
-        context.font = '100 10px arial';
+        context.font = '100 ' + texts.slicePercent.styles.fontSize + 'px arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.fillStyle = texts.slicePercent.styles.color;
@@ -225,7 +225,8 @@ export default class Slices extends Chart {
     }
     //draw center
     if (texts.center.enable) {
-      context.font = '800 ' + 20 * state.loading + 'px arial';
+      context.font =
+        '800 ' + texts.center.styles.fontSize * state.loading + 'px arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = texts.center.styles.color;
@@ -266,7 +267,6 @@ export default class Slices extends Chart {
   render(info = {}) {
     let time = 300;
     if (this.renderTimeout) clearTimeout(this.renderTimeout);
-    // console.log('render ' + info.from);
     this.renderTimeout = setTimeout(() => {
       super.baseRender();
       this.drawSlices();
