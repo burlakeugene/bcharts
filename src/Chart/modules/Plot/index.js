@@ -32,6 +32,13 @@ export default class Plot extends Chart {
     data.datasets.forEach((dataset) => {
       if (!dataset.color) dataset.color = generateRandomColor();
     });
+    let bars = data.datasets.filter((dataset) => {
+      return dataset.type === 'bar';
+    });
+    bars.forEach((bar, index) => {
+      bar.count = bars.length;
+      bar.index = index + 1;
+    });
     return data;
   }
   getInterpolation(value, values) {
@@ -42,7 +49,7 @@ export default class Plot extends Chart {
       { lineWidth } = line.styles,
       max = Math.max(...values),
       min = Math.min(...values),
-      top = offset.top + grid.offset.top,
+      top = offset.top + grid.offset.top + grid.styles.borderWidth,
       percent =
         ((value * this.state.loading -
           min * (min > 0 ? this.state.loading : 1)) *
@@ -54,7 +61,8 @@ export default class Plot extends Chart {
         offset.top -
         grid.offset.top -
         offset.bottom -
-        grid.offset.bottom,
+        grid.offset.bottom -
+        grid.styles.borderWidth * 2,
       y = top + height - height * percent;
     return y;
   }
@@ -69,9 +77,8 @@ export default class Plot extends Chart {
       right = element.clientWidth - offset.right - offset.left,
       top = 0 + offset.top,
       bottom = element.clientHeight - offset.bottom - offset.top;
-
-    context.lineWidth = styles.width;
-    context.strokeStyle = styles.color;
+    context.lineWidth = styles.borderWidth;
+    context.strokeStyle = styles.borderColor;
     context.fillStyle = styles.background;
     if (styles.dash) context.setLineDash(styles.dash);
     context.beginPath();
@@ -106,8 +113,8 @@ export default class Plot extends Chart {
           horizonalArray.push(y);
         }
       }
-      context.lineWidth = horizontalStyles.width;
-      context.strokeStyle = horizontalStyles.color;
+      context.lineWidth = horizontalStyles.borderWidth;
+      context.strokeStyle = horizontalStyles.borderColor;
       if (horizontalStyles.dash) {
         context.setLineDash(horizontalStyles.dash);
       }
@@ -147,8 +154,8 @@ export default class Plot extends Chart {
           verticalArray.push(x);
         }
       }
-      context.lineWidth = verticalStyles.width;
-      context.strokeStyle = verticalStyles.color;
+      context.lineWidth = verticalStyles.borderWidth;
+      context.strokeStyle = verticalStyles.borderColor;
       if (verticalStyles.dash) {
         context.setLineDash(verticalStyles.dash);
       }
@@ -186,16 +193,17 @@ export default class Plot extends Chart {
     return data.datasets;
   }
   getAllValues() {
-    let datasets = this.getDatasets();
-    return datasets.reduce((acc, dataset) => {
-      return [...acc, ...dataset.values];
-    }, []);
+    let datasets = this.getDatasets(),
+      result = datasets.reduce((acc, dataset) => {
+        return [...acc, ...dataset.values];
+      }, [0]);
+    return result;
   }
   drawValues() {
     let { canvas, settings } = this,
       { values, offset, grid } = settings,
       { element, context } = canvas,
-      { enable, styles } = values;
+      { enable, styles, digits } = values;
     if (!enable) return;
     let x = offset.left / 2,
       allValues = this.getAllValues(),
@@ -216,9 +224,8 @@ export default class Plot extends Chart {
         y: this.getInterpolation(value, allValues),
       });
     }
-    console.log(texts, min, max);
     texts.forEach((text) => {
-      context.fillText(text.value.toFixed(2), text.x, text.y);
+      context.fillText(text.value.toFixed(digits), text.x, text.y);
     });
   }
   drawData() {
@@ -233,6 +240,40 @@ export default class Plot extends Chart {
       this['draw' + type] && this['draw' + type](dataset);
     });
   }
+  getDrawRect(type) {
+    let { canvas, settings } = this,
+      { offset, grid } = settings,
+      { element, context } = canvas,
+      viewRect = {
+        top: offset.top + grid.styles.borderWidth,
+        left: offset.left + grid.styles.borderWidth,
+        right: offset.right - grid.styles.borderWidth,
+        bottom: offset.bottom - grid.styles.borderWidth,
+        width:
+          element.clientWidth -
+          offset.left -
+          offset.right -
+          grid.styles.borderWidth * 2,
+        height:
+          element.clientHeight -
+          offset.top -
+          offset.bottom -
+          grid.styles.borderWidth * 2,
+      },
+      gridRect = {
+        top: viewRect.top + grid.offset.top,
+        left: viewRect.left + grid.offset.left,
+        right: viewRect.right - grid.offset.right,
+        bottom: viewRect.bottom - grid.offset.bottom,
+        width: viewRect.width - grid.offset.left - grid.offset.right,
+        height: viewRect.height - grid.offset.top - grid.offset.bottom,
+      },
+      obj = {
+        view: viewRect,
+        grid: gridRect,
+      };
+    return type && obj[type] ? obj[type] : obj;
+  }
   drawLINE(dataset, allValues) {
     let { canvas, settings } = this,
       { data, offset, grid } = settings,
@@ -240,14 +281,9 @@ export default class Plot extends Chart {
       { line } = data,
       { lineWidth } = line.styles,
       { values, color } = dataset,
-      drawWidth =
-        element.clientWidth -
-        offset.left -
-        offset.right -
-        grid.offset.left -
-        grid.offset.right,
-      drawStart = offset.left + grid.offset.left,
-      partWidth = drawWidth / (values.length - 1);
+      drawRect = this.getDrawRect('grid'),
+      drawStart = drawRect.left,
+      partWidth = drawRect.width / (values.length - 1);
     context.strokeStyle = dataset.color;
     context.lineWidth = lineWidth;
     context.lineJoin = 'round';
@@ -262,6 +298,38 @@ export default class Plot extends Chart {
       }
     });
     context.stroke();
+  }
+  drawBAR(dataset, allValues) {
+    let { canvas, settings } = this,
+      { data, offset, grid } = settings,
+      { element, context } = canvas,
+      { bar } = data,
+      { values, color } = dataset,
+      drawRect = this.getDrawRect('grid'),
+      drawStart = drawRect.left,
+      partWidth = drawRect.width / values.length,
+      partPadding = 10;
+    partWidth -= partPadding;
+    context.strokeStyle = dataset.color;
+    context.fillStyle = dataset.color;
+    values.forEach((value, index) => {
+      context.beginPath();
+      let barWidth = partWidth / dataset.count - partPadding / dataset.count,
+        x =
+          drawStart +
+          partWidth * index +
+          partPadding * (index + 1) +
+          barWidth * (dataset.index - 1),
+        xStart = x,
+        xEnd = x + barWidth,
+        y = this.getInterpolation(value, this.getAllValues()),
+        y0 = this.getInterpolation(0, this.getAllValues());
+      context.moveTo(xStart, y0);
+      context.lineTo(xStart, y);
+      context.lineTo(xEnd, y);
+      context.lineTo(xEnd, y0);
+      context.fill();
+    });
   }
   render(info = {}) {
     let time = 300;

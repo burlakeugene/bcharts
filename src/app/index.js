@@ -4,30 +4,57 @@ window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
+      dataLength = 10,
       chart = new Plot({
         data: {
-          labels: ['First', 'Second', 'Third'],
+          labels: (() => {
+            let array = [];
+            for (let i = 0; i <= dataLength; i++) {
+              array.push('Label ' + parseInt(i + 1));
+            }
+            return array;
+          })(),
           datasets: [
             {
-              name: 'Some line data',
-              type: 'line',
+              name: 'Some bar data 1',
+              type: 'bar',
               values: (() => {
-                let length = 10;
                 let array = [];
-                for (let i = 0; i <= length; i++) {
-                  array.push(Math.random() * -1);
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
                 }
                 return array;
               })(),
             },
             {
-              name: 'Some bar data',
+              name: 'Some bar data 2',
+              type: 'bar',
+              values: (() => {
+                let array = [];
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
+                }
+                return array;
+              })(),
+            },
+            {
+              name: 'Some bar data 2',
+              type: 'bar',
+              values: (() => {
+                let array = [];
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
+                }
+                return array;
+              })(),
+            },
+            {
+              name: 'Some line data',
               type: 'line',
               values: (() => {
-                let length = 10;
                 let array = [];
-                for (let i = 0; i <= length; i++) {
-                  array.push(Math.random());
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
                 }
                 return array;
               })(),

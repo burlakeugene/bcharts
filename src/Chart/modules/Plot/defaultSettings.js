@@ -9,16 +9,16 @@ export default {
   grid: {
     enable: true,
     offset: {
-      top: 30,
-      right: 30,
-      bottom: 30,
-      left: 30,
+      top: 20,
+      right: 20,
+      bottom: 20,
+      left: 20,
     },
     styles: {
       background: '',
-      color: '#2b2a49',
+      borderColor: '#2b2a49',
       borderRadius: 5,
-      width: 2,
+      borderWidth: 2,
     },
     horizontal: {
       step: 4,
@@ -38,6 +38,7 @@ export default {
   },
   values: {
     enable: true,
+    digits: 2,
     styles: {
       color: '#fff',
       fontSize: 12
