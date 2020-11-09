@@ -175,9 +175,9 @@ export default class Plot extends Chart {
       { element, context } = canvas,
       { enable, styles } = labels;
     if (!enable) return;
-    let start = offset.left + grid.offset.left,
-      end = element.clientWidth - offset.right - grid.offset.right,
-      width = (end - start) / (data.labels.length - 1),
+    let drawRect = this.getDrawRect('line'),
+      start = drawRect.left,
+      width = drawRect.width / (data.labels.length - 1),
       y = element.clientHeight - offset.bottom / 2;
     data.labels.forEach((label, index) => {
       let x = start + width * index;
@@ -194,9 +194,12 @@ export default class Plot extends Chart {
   }
   getAllValues() {
     let datasets = this.getDatasets(),
-      result = datasets.reduce((acc, dataset) => {
-        return [...acc, ...dataset.values];
-      }, [0]);
+      result = datasets.reduce(
+        (acc, dataset) => {
+          return [...acc, ...dataset.values];
+        },
+        [0]
+      );
     return result;
   }
   drawValues() {
@@ -234,7 +237,18 @@ export default class Plot extends Chart {
       { enable } = data,
       datasets = this.getDatasets();
     if (!enable) return;
-    datasets.forEach((dataset) => {
+    let bars = datasets.filter((dataset) => {
+      return dataset.type === 'bar';
+    });
+    bars.forEach((dataset) => {
+      let { type } = dataset;
+      type = type.toUpperCase();
+      this['draw' + type] && this['draw' + type](dataset);
+    });
+    let lines = datasets.filter((dataset) => {
+      return dataset.type === 'line';
+    });
+    lines.forEach((dataset) => {
       let { type } = dataset;
       type = type.toUpperCase();
       this['draw' + type] && this['draw' + type](dataset);
@@ -260,17 +274,27 @@ export default class Plot extends Chart {
           offset.bottom -
           grid.styles.borderWidth * 2,
       },
-      gridRect = {
+      bar = {
         top: viewRect.top + grid.offset.top,
         left: viewRect.left + grid.offset.left,
-        right: viewRect.right - grid.offset.right,
+        right: viewRect.right + grid.offset.right,
         bottom: viewRect.bottom - grid.offset.bottom,
         width: viewRect.width - grid.offset.left - grid.offset.right,
         height: viewRect.height - grid.offset.top - grid.offset.bottom,
       },
+      line = {
+        ...bar,
+        left: bar.left + (grid?.offset?.bar?.left || 0),
+        right: bar.right + (grid?.offset?.bar?.right || 0),
+        width:
+          bar.width -
+          (grid?.offset?.bar?.left || 0) -
+          (grid?.offset?.bar?.right || 0),
+      },
       obj = {
         view: viewRect,
-        grid: gridRect,
+        bar,
+        line,
       };
     return type && obj[type] ? obj[type] : obj;
   }
@@ -281,7 +305,7 @@ export default class Plot extends Chart {
       { line } = data,
       { lineWidth } = line.styles,
       { values, color } = dataset,
-      drawRect = this.getDrawRect('grid'),
+      drawRect = this.getDrawRect('line'),
       drawStart = drawRect.left,
       partWidth = drawRect.width / (values.length - 1);
     context.strokeStyle = dataset.color;
@@ -305,21 +329,19 @@ export default class Plot extends Chart {
       { element, context } = canvas,
       { bar } = data,
       { values, color } = dataset,
-      drawRect = this.getDrawRect('grid'),
+      drawRect = this.getDrawRect('bar'),
       drawStart = drawRect.left,
-      partWidth = drawRect.width / values.length,
-      partPadding = 10;
-    partWidth -= partPadding;
+      partWidth = drawRect.width / values.length;
     context.strokeStyle = dataset.color;
     context.fillStyle = dataset.color;
+    grid.offset.bar = {
+      left: partWidth / 2,
+      right: partWidth / 2,
+    };
     values.forEach((value, index) => {
       context.beginPath();
-      let barWidth = partWidth / dataset.count - partPadding / dataset.count,
-        x =
-          drawStart +
-          partWidth * index +
-          partPadding * (index + 1) +
-          barWidth * (dataset.index - 1),
+      let barWidth = partWidth / dataset.count,
+        x = drawStart + partWidth * index + barWidth * (dataset.index - 1),
         xStart = x,
         xEnd = x + barWidth,
         y = this.getInterpolation(value, this.getAllValues()),
@@ -338,8 +360,8 @@ export default class Plot extends Chart {
       super.baseRender();
       this.drawGrid();
       this.drawLabels();
-      this.drawValues();
       this.drawData();
+      this.drawValues();
     }, time / 60);
   }
 }
