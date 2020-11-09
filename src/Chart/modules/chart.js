@@ -19,7 +19,6 @@ export default class Chart {
         (canvas instanceof Element || canvas instanceof HTMLDocument) &&
         canvas.tagName.toLowerCase() === 'canvas',
     };
-    this.data = this.prepareData(data);
     this.cursor = { x: 0, y: 0 };
     this.settings = deepMerge(
       deepClone(commonDefaultSettings),
@@ -30,6 +29,7 @@ export default class Chart {
     this.state = {
       loading: this.settings.animated ? 0 : 1,
     };
+    this.data = this.prepareData(data);
     this.commonInit();
   }
   prepareData(data) {

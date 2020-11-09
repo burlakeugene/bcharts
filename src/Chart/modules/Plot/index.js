@@ -39,6 +39,15 @@ export default class Plot extends Chart {
       bar.count = bars.length;
       bar.index = index + 1;
     });
+    if (bars.length) {
+      this.settings.data.initialValue = 0;
+      let drawRect = this.getDrawRect('bar'),
+        drawStart = drawRect.left,
+        partWidth = drawRect.width / maxLength;
+      this.settings.data.line.offset.left = partWidth / 2;
+      this.settings.data.line.offset.right = partWidth / 2;
+    }
+
     return data;
   }
   getInterpolation(value, values) {
@@ -193,13 +202,14 @@ export default class Plot extends Chart {
     return data.datasets;
   }
   getAllValues() {
+    let { data } = this.settings,
+      acc = [];
+    if (data.initialValue || data.initialValue === 0)
+      acc.push(data.initialValue);
     let datasets = this.getDatasets(),
-      result = datasets.reduce(
-        (acc, dataset) => {
-          return [...acc, ...dataset.values];
-        },
-        [0]
-      );
+      result = datasets.reduce((acc, dataset) => {
+        return [...acc, ...dataset.values];
+      }, acc);
     return result;
   }
   drawValues() {
@@ -256,7 +266,7 @@ export default class Plot extends Chart {
   }
   getDrawRect(type) {
     let { canvas, settings } = this,
-      { offset, grid } = settings,
+      { offset, grid, data } = settings,
       { element, context } = canvas,
       viewRect = {
         top: offset.top + grid.styles.borderWidth,
@@ -274,7 +284,7 @@ export default class Plot extends Chart {
           offset.bottom -
           grid.styles.borderWidth * 2,
       },
-      bar = {
+      gridRect = {
         top: viewRect.top + grid.offset.top,
         left: viewRect.left + grid.offset.left,
         right: viewRect.right + grid.offset.right,
@@ -282,19 +292,18 @@ export default class Plot extends Chart {
         width: viewRect.width - grid.offset.left - grid.offset.right,
         height: viewRect.height - grid.offset.top - grid.offset.bottom,
       },
-      line = {
-        ...bar,
-        left: bar.left + (grid?.offset?.bar?.left || 0),
-        right: bar.right + (grid?.offset?.bar?.right || 0),
-        width:
-          bar.width -
-          (grid?.offset?.bar?.left || 0) -
-          (grid?.offset?.bar?.right || 0),
+      barRect = gridRect,
+      lineRect = {
+        ...gridRect,
+        left: gridRect.left + data.line.offset.left,
+        right: gridRect.right + data.line.offset.right,
+        width: gridRect.width - data.line.offset.left - data.line.offset.right,
       },
       obj = {
         view: viewRect,
-        bar,
-        line,
+        grid: gridRect,
+        bar: barRect,
+        line: lineRect,
       };
     return type && obj[type] ? obj[type] : obj;
   }
@@ -322,10 +331,30 @@ export default class Plot extends Chart {
       }
     });
     context.stroke();
+    if(line?.dots?.enable){
+      context.fillStyle = dataset.color;
+      context.strokeStyle = line.dots.borderColor;
+      context.lineWidth = line.dots.borderWidth;
+      values.forEach((value, index) => {
+        context.beginPath();
+        let x = drawStart + partWidth * index,
+          y = this.getInterpolation(value, this.getAllValues());
+          context.arc(
+            x,
+            y,
+            5,
+            0,
+            2 * Math.PI
+          );
+          context.fill();
+          context.closePath();
+          context.stroke();
+      });
+    }
   }
   drawBAR(dataset, allValues) {
     let { canvas, settings } = this,
-      { data, offset, grid } = settings,
+      { data } = settings,
       { element, context } = canvas,
       { bar } = data,
       { values, color } = dataset,
@@ -334,14 +363,16 @@ export default class Plot extends Chart {
       partWidth = drawRect.width / values.length;
     context.strokeStyle = dataset.color;
     context.fillStyle = dataset.color;
-    grid.offset.bar = {
-      left: partWidth / 2,
-      right: partWidth / 2,
-    };
+    data.line.offset.left = partWidth / 2;
+    data.line.offset.right = partWidth / 2;
     values.forEach((value, index) => {
       context.beginPath();
-      let barWidth = partWidth / dataset.count,
-        x = drawStart + partWidth * index + barWidth * (dataset.index - 1),
+      let barWidth = partWidth / dataset.count - bar.offset / dataset.count,
+        x =
+          drawStart +
+          bar.offset / 2 +
+          partWidth * index +
+          barWidth * (dataset.index - 1),
         xStart = x,
         xEnd = x + barWidth,
         y = this.getInterpolation(value, this.getAllValues()),

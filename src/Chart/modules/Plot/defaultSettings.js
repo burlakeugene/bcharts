@@ -33,24 +33,38 @@ export default {
     enable: true,
     styles: {
       color: '#fff',
-      fontSize: 12
-    }
+      fontSize: 12,
+    },
   },
   values: {
     enable: true,
     digits: 2,
     styles: {
       color: '#fff',
-      fontSize: 12
-    }
+      fontSize: 12,
+    },
   },
   data: {
     enable: true,
     offset: 0,
     line: {
+      offset: {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+      },
+      dots: {
+        enable: true,
+        borderColor: '#1a1e30',
+        borderWidth: 2
+      },
       styles: {
-        lineWidth: 3
-      }
+        lineWidth: 2,
+      },
+    },
+    bar: {
+      offset: 10
     }
-  }
+  },
 };
