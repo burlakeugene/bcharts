@@ -56,8 +56,6 @@ export default {
       },
       dots: {
         enable: true,
-        borderColor: '#1a1e30',
-        borderWidth: 2
       },
       styles: {
         lineWidth: 2,

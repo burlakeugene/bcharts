@@ -333,8 +333,7 @@ export default class Plot extends Chart {
     context.stroke();
     if(line?.dots?.enable){
       context.fillStyle = dataset.color;
-      context.strokeStyle = line.dots.borderColor;
-      context.lineWidth = line.dots.borderWidth;
+      context.strokeStyle = colorChangeTone(dataset.color, -50);
       values.forEach((value, index) => {
         context.beginPath();
         let x = drawStart + partWidth * index,
