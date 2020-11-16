@@ -224,7 +224,10 @@ export default class Chart {
             }
           }
           height =
-            title.height + Math.max(...panels.map((panel) => panel.height));
+            title.height +
+            (panels.length
+              ? Math.max(...panels.map((panel) => panel.height))
+              : 0);
           width = Math.max(title.width, panelsWidth);
           return {
             width,

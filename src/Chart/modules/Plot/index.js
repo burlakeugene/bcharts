@@ -31,6 +31,11 @@ export default class Plot extends Chart {
     );
     data.datasets.forEach((dataset) => {
       if (!dataset.color) dataset.color = generateRandomColor();
+      dataset.values.forEach((value, index) => {
+        dataset.values[index] = {
+          value,
+        };
+      });
     });
     let bars = data.datasets.filter((dataset) => {
       return dataset.type === 'bar';
@@ -208,7 +213,7 @@ export default class Plot extends Chart {
       acc.push(data.initialValue);
     let datasets = this.getDatasets(),
       result = datasets.reduce((acc, dataset) => {
-        return [...acc, ...dataset.values];
+        return [...acc, ...dataset.values.map((value) => value.value)];
       }, acc);
     return result;
   }
@@ -323,7 +328,14 @@ export default class Plot extends Chart {
     context.beginPath();
     values.forEach((value, index) => {
       let x = drawStart + partWidth * index,
-        y = this.getInterpolation(value, this.getAllValues());
+        y = this.getInterpolation(value.value, this.getAllValues());
+      value.hoverArea = {
+        xStart: x - partWidth / 2,
+        yStart: drawRect.top,
+        xEnd: x + partWidth / 2,
+        yEnd: drawRect.top + drawRect.height,
+      };
+      value.isHovered = this.checkIsHovered(value.hoverArea);
       if (!index) {
         context.moveTo(x, y);
       } else {
@@ -331,28 +343,22 @@ export default class Plot extends Chart {
       }
     });
     context.stroke();
-    if(line?.dots?.enable){
+    if (line?.dots?.enable) {
       context.fillStyle = dataset.color;
       context.strokeStyle = colorChangeTone(dataset.color, -50);
       values.forEach((value, index) => {
         context.beginPath();
         let x = drawStart + partWidth * index,
-          y = this.getInterpolation(value, this.getAllValues());
-          context.arc(
-            x,
-            y,
-            5,
-            0,
-            2 * Math.PI
-          );
-          context.fill();
-          context.closePath();
-          context.stroke();
+          y = this.getInterpolation(value.value, this.getAllValues());
+        context.arc(x, y, 5, 0, 2 * Math.PI);
+        context.fill();
+        context.closePath();
+        context.stroke();
       });
     }
   }
   drawBAR(dataset, allValues) {
-    let { canvas, settings } = this,
+    let { canvas, settings, cursor } = this,
       { data } = settings,
       { element, context } = canvas,
       { bar } = data,
@@ -374,14 +380,50 @@ export default class Plot extends Chart {
           barWidth * (dataset.index - 1),
         xStart = x,
         xEnd = x + barWidth,
-        y = this.getInterpolation(value, this.getAllValues()),
+        y = this.getInterpolation(value.value, this.getAllValues()),
         y0 = this.getInterpolation(0, this.getAllValues());
+      value.hoverArea = {
+        xStart: drawStart + partWidth * index,
+        yStart: drawRect.top,
+        xEnd:
+          drawStart + partWidth * index + barWidth * dataset.count + bar.offset,
+        yEnd: drawRect.top + drawRect.height,
+      };
+      value.isHovered = this.checkIsHovered(value.hoverArea);
       context.moveTo(xStart, y0);
       context.lineTo(xStart, y);
       context.lineTo(xEnd, y);
       context.lineTo(xEnd, y0);
       context.fill();
     });
+  }
+  checkIsHovered(area) {
+    let { cursor } = this,
+      bool =
+        cursor.x >= area.xStart &&
+        cursor.x <= area.xEnd &&
+        cursor.y >= area.yStart &&
+        cursor.y <= area.yEnd;
+    return bool;
+  }
+  drawTooltip() {
+    let { settings, data } = this;
+    // super.drawTooltip({
+    //   title: {
+    //     text: data.labels[overMouse[0].index],
+    //   },
+    //   panels: overMouse.map((panel) => ({
+    //     colorPanel: {
+    //       color: panel.color,
+    //     },
+    //     texts: [
+    //       {
+    //         text: 'Value: ' + panel.value.toFixed(settings.data.digits),
+    //       },
+    //     ],
+    //   })),
+    //   render: (obj) => {},
+    // });
   }
   render(info = {}) {
     let time = 300;
@@ -392,6 +434,7 @@ export default class Plot extends Chart {
       this.drawLabels();
       this.drawData();
       this.drawValues();
+      this.drawTooltip();
     }, time / 60);
   }
 }

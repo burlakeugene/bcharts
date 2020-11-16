@@ -47,6 +47,7 @@ export default {
   data: {
     enable: true,
     offset: 0,
+    digits: 2,
     line: {
       offset: {
         left: 0,
