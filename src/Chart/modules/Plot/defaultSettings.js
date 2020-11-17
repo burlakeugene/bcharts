@@ -1,5 +1,4 @@
 export default {
-  animated: true,
   offset: {
     top: 20,
     right: 20,
@@ -57,13 +56,22 @@ export default {
       },
       dots: {
         enable: true,
+        width: 5,
+        hover: {
+          enable: true,
+          width: 3
+        }
       },
       styles: {
         lineWidth: 2,
       },
     },
     bar: {
-      offset: 10
+      offset: 10,
+      hover: {
+        enable: true,
+        value: 50
+      }
     }
   },
 };

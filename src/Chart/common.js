@@ -65,6 +65,7 @@ export const getPointOnArc = (x, y, radius, angle) => {
 };
 
 export const colorChangeTone = (color, amount) => {
+  amount = parseInt(amount);
   return (
     '#' +
     color

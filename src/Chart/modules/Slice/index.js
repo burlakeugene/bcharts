@@ -57,25 +57,25 @@ export default class Slices extends Chart {
   }
   drawSlices() {
     let { canvas, settings, data, cursor, type, state } = this,
-      { offset, slice, texts, tooltip, animated } = settings,
       { context, element } = canvas,
       sideSize =
         Math.min(
           element.clientHeight -
-            offset.top -
-            offset.bottom -
-            (type === 'donut' ? slice.styles.width : 0),
+            settings.offset.top -
+            settings.offset.bottom -
+            (type === 'donut' ? settings.data.styles.width : 0),
           element.clientWidth -
-            offset.left -
-            offset.right -
-            (type === 'donut' ? slice.styles.width : 0)
+            settings.offset.left -
+            settings.offset.right -
+            (type === 'donut' ? settings.data.styles.width : 0)
         ) * state.loading,
       sliceWidth,
       radius,
-      x = element.clientWidth / 2 + offset.left - offset.right,
-      y = element.clientHeight / 2 + offset.top - offset.bottom,
-      { volumed } = slice,
-      hoveredValue = slice?.hover?.value,
+      x =
+        element.clientWidth / 2 + settings.offset.left - settings.offset.right,
+      y =
+        element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
+      { volumed } = settings.data,
       piOffset = -(Math.PI / 2);
     data = this.prepareData(data);
     if (type === 'pie') {
@@ -83,25 +83,26 @@ export default class Slices extends Chart {
       radius = sideSize / 4;
     }
     if (type === 'donut') {
-      if (slice.styles.width >= sideSize) {
+      if (settings.data.styles.width >= sideSize) {
         sliceWidth = sideSize;
       } else {
-        sliceWidth = slice.styles.width;
+        sliceWidth = settings.data.styles.width;
       }
       radius = sideSize / 2;
     }
     for (let i = 0; i <= data.length - 1; i++) {
       let startPi = piOffset,
         endPi =
-          (2 * Math.PI * state.loading * data[i].percent) / 100 + piOffset;
+          (2 * Math.PI * state.loading * data[i].percent) / 100 + piOffset,
+        hoveredValue = settings.data.hover.value * data[i].state;
       data[i].startPi = startPi;
       data[i].endPi = endPi;
       piOffset = endPi;
       let polygon = this.generatePolygon({
           x,
           y,
-          radius: radius + data[i].state / 2,
-          sliceWidth: sliceWidth + data[i].state,
+          radius: radius + hoveredValue / 2,
+          sliceWidth: sliceWidth + hoveredValue,
           startPi,
           endPi,
         }),
@@ -113,43 +114,16 @@ export default class Slices extends Chart {
       data[i].polygon = polygon;
       data[i].hovered = mouseInPath;
 
-      //change color on hover
-      if (data[i].hovered && slice?.hover?.enable) {
-        if (animated) {
-          if (data[i].state < hoveredValue) {
-            data[i].state += 1;
-            this.render({
-              from: 'Animated increase state',
-            });
-          }
-        } else {
-          data[i].state = hoveredValue;
-          this.render({
-            from: 'Increase state',
-          });
-        }
-      } else {
-        if (animated) {
-          if (data[i].state > 0) {
-            data[i].state -= 1;
-            this.render({
-              from: 'Animated decrease state',
-            });
-          }
-        } else {
-          data[i].state = 0;
-          this.render({
-            from: 'Decrease state',
-          });
-        }
-      }
+      super.hover({
+        item: data[i],
+        isHovered: data[i].hovered,
+      });
 
       let ring = [];
-
       ring.push({
-        radius: radius + data[i].state / 2,
-        width: sliceWidth + data[i].state,
-        color: colorChangeTone(data[i].color, data[i].state),
+        radius: radius + hoveredValue / 2,
+        width: sliceWidth + hoveredValue,
+        color: colorChangeTone(data[i].color, hoveredValue),
         x,
         y,
         startPi,
@@ -158,17 +132,17 @@ export default class Slices extends Chart {
       if (volumed) {
         let volumeRadius, volumeWidth;
         if (type === 'donut') {
-          volumeRadius = radius - sliceWidth / 4 + data[i].state / 2;
-          volumeWidth = sliceWidth / 2 + data[i].state;
+          volumeRadius = radius - sliceWidth / 4 + hoveredValue / 2;
+          volumeWidth = sliceWidth / 2 + hoveredValue;
         }
         if (type === 'pie') {
-          volumeRadius = radius - sliceWidth / 6 + data[i].state / 2;
+          volumeRadius = radius - sliceWidth / 6 + hoveredValue / 2;
           volumeWidth = volumeRadius * 2;
         }
         ring.push({
           radius: volumeRadius,
           width: volumeWidth,
-          color: colorChangeTone(data[i].color, -50 + data[i].state),
+          color: colorChangeTone(data[i].color, -50 + hoveredValue),
           x,
           y,
           startPi,
@@ -194,24 +168,25 @@ export default class Slices extends Chart {
         context.restore();
       }
     }
-    if (texts.slicePercent.enable) {
+    if (settings.texts.slicePercent.enable) {
       for (let i = 0; i <= data.length - 1; i++) {
-        context.font = '100 ' + texts.slicePercent.styles.fontSize + 'px arial';
+        context.font =
+          '100 ' + settings.texts.slicePercent.styles.fontSize + 'px arial';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillStyle = texts.slicePercent.styles.color;
+        context.fillStyle = settings.texts.slicePercent.styles.color;
         let percentRadius = radius;
         if (type === 'donut' && volumed) {
-          percentRadius += sliceWidth / 4 + data[i].state;
+          percentRadius += sliceWidth / 4 + hoveredValue;
         }
         if (type === 'donut' && !volumed) {
-          percentRadius += data[i].state / 2;
+          percentRadius += hoveredValue / 2;
         }
         if (type === 'pie' && volumed) {
-          percentRadius += sliceWidth / 3 + data[i].state;
+          percentRadius += sliceWidth / 3 + hoveredValue;
         }
         if (type === 'pie' && !volumed) {
-          percentRadius += data[i].state / 2;
+          percentRadius += hoveredValue / 2;
         }
         let pointText = parseFloat(data[i].percent.toFixed(2)) + '%',
           point = getPointOnArc(
@@ -224,12 +199,14 @@ export default class Slices extends Chart {
       }
     }
     //draw center
-    if (texts.center.enable) {
+    if (settings.texts.center.enable) {
       context.font =
-        '800 ' + texts.center.styles.fontSize * state.loading + 'px arial';
+        '800 ' +
+        settings.texts.center.styles.fontSize * state.loading +
+        'px arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillStyle = texts.center.styles.color;
+      context.fillStyle = settings.texts.center.styles.color;
       context.fillText(texts.center.text, x, y);
     }
   }

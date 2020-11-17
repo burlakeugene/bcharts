@@ -1,8 +1,14 @@
 export default {
+  animated: true,
   view: {
     styles: {
       background: '#1a1e30',
     },
+  },
+  data: {
+    hover: {
+      enable: true
+    }
   },
   tooltip: {
     enable: true,

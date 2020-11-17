@@ -357,6 +357,43 @@ export default class Chart {
     context.fillStyle = background;
     context.fillRect(0, 0, element.width, element.height);
   }
+  hover({ item, isHovered }) {
+    let { settings } = this,
+      step = 1 / 20;
+    if (isHovered && settings?.data?.hover?.enable) {
+      if (!item.hasOwnProperty('state')) item.state = 0;
+      let hoveredValue = settings?.data?.hover?.value || 0;
+      if (settings.animated) {
+        if (item.state < 1) {
+          item.state += step;
+          if(item.state > 1) item.state = 1;
+          this.render({
+            from: 'Animated increase state',
+          });
+        }
+      } else {
+        item.state = 1;
+        this.render({
+          from: 'Increase state',
+        });
+      }
+    } else {
+      if (settings.animated) {
+        if (item.state > 0) {
+          item.state -= step;
+          if(item.state < 0) item.state = 0;
+          this.render({
+            from: 'Animated decrease state',
+          });
+        }
+      } else {
+        item.state = 0;
+        this.render({
+          from: 'Decrease state',
+        });
+      }
+    }
+  }
   baseRender() {
     this.setRatio();
     this.clearCanvas();

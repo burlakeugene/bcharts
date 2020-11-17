@@ -33,7 +33,10 @@ export default class Plot extends Chart {
       if (!dataset.color) dataset.color = generateRandomColor();
       dataset.values.forEach((value, index) => {
         dataset.values[index] = {
+          color: dataset.color,
+          index,
           value,
+          state: 0,
         };
       });
     });
@@ -52,7 +55,6 @@ export default class Plot extends Chart {
       this.settings.data.line.offset.left = partWidth / 2;
       this.settings.data.line.offset.right = partWidth / 2;
     }
-
     return data;
   }
   getInterpolation(value, values) {
@@ -329,13 +331,13 @@ export default class Plot extends Chart {
     values.forEach((value, index) => {
       let x = drawStart + partWidth * index,
         y = this.getInterpolation(value.value, this.getAllValues());
-      value.hoverArea = {
+      value.area = {
         xStart: x - partWidth / 2,
         yStart: drawRect.top,
         xEnd: x + partWidth / 2,
         yEnd: drawRect.top + drawRect.height,
       };
-      value.isHovered = this.checkIsHovered(value.hoverArea);
+      this.checkIsHovered(value);
       if (!index) {
         context.moveTo(x, y);
       } else {
@@ -350,7 +352,14 @@ export default class Plot extends Chart {
         context.beginPath();
         let x = drawStart + partWidth * index,
           y = this.getInterpolation(value.value, this.getAllValues());
-        context.arc(x, y, 5, 0, 2 * Math.PI);
+        context.arc(
+          x,
+          y,
+          line.dots.width +
+            (line.dots.hover.enable ? line.dots.hover.width * value.state : 0),
+          0,
+          2 * Math.PI
+        );
         context.fill();
         context.closePath();
         context.stroke();
@@ -362,16 +371,20 @@ export default class Plot extends Chart {
       { data } = settings,
       { element, context } = canvas,
       { bar } = data,
-      { values, color } = dataset,
+      { values } = dataset,
       drawRect = this.getDrawRect('bar'),
       drawStart = drawRect.left,
       partWidth = drawRect.width / values.length;
-    context.strokeStyle = dataset.color;
-    context.fillStyle = dataset.color;
     data.line.offset.left = partWidth / 2;
     data.line.offset.right = partWidth / 2;
     values.forEach((value, index) => {
       context.beginPath();
+      let color = colorChangeTone(
+        dataset.color,
+        bar?.hover?.enable ? bar.hover.value * value.state : 1
+      );
+      context.strokeStyle = color;
+      context.fillStyle = color;
       let barWidth = partWidth / dataset.count - bar.offset / dataset.count,
         x =
           drawStart +
@@ -382,14 +395,14 @@ export default class Plot extends Chart {
         xEnd = x + barWidth,
         y = this.getInterpolation(value.value, this.getAllValues()),
         y0 = this.getInterpolation(0, this.getAllValues());
-      value.hoverArea = {
+      value.area = {
         xStart: drawStart + partWidth * index,
         yStart: drawRect.top,
         xEnd:
           drawStart + partWidth * index + barWidth * dataset.count + bar.offset,
         yEnd: drawRect.top + drawRect.height,
       };
-      value.isHovered = this.checkIsHovered(value.hoverArea);
+      this.checkIsHovered(value);
       context.moveTo(xStart, y0);
       context.lineTo(xStart, y);
       context.lineTo(xEnd, y);
@@ -397,33 +410,46 @@ export default class Plot extends Chart {
       context.fill();
     });
   }
-  checkIsHovered(area) {
+  checkIsHovered(item) {
     let { cursor } = this,
+      { area } = item,
       bool =
         cursor.x >= area.xStart &&
         cursor.x <= area.xEnd &&
         cursor.y >= area.yStart &&
         cursor.y <= area.yEnd;
+    item.isHovered = bool;
+    super.hover({
+      item,
+      isHovered: bool,
+    });
     return bool;
   }
   drawTooltip() {
-    let { settings, data } = this;
-    // super.drawTooltip({
-    //   title: {
-    //     text: data.labels[overMouse[0].index],
-    //   },
-    //   panels: overMouse.map((panel) => ({
-    //     colorPanel: {
-    //       color: panel.color,
-    //     },
-    //     texts: [
-    //       {
-    //         text: 'Value: ' + panel.value.toFixed(settings.data.digits),
-    //       },
-    //     ],
-    //   })),
-    //   render: (obj) => {},
-    // });
+    let { settings, data } = this,
+      hovered = data.datasets.map((dataset) => {
+        return dataset.values.filter((value) => value.isHovered);
+      });
+    hovered = hovered.reduce((acc, panel) => {
+      return [...acc, ...panel];
+    }, []);
+    if (!hovered.length) return;
+    super.drawTooltip({
+      title: {
+        text: data.labels[hovered[0].index],
+      },
+      panels: hovered.map((panel) => ({
+        colorPanel: {
+          color: panel.color,
+        },
+        texts: [
+          {
+            text: 'Value: ' + panel.value.toFixed(settings.data.digits),
+          },
+        ],
+      })),
+      render: (obj) => {},
+    });
   }
   render(info = {}) {
     let time = 300;

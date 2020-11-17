@@ -1,21 +1,19 @@
 export default {
-  animated: true,
   offset: {
     top: 30,
     right: 30,
     bottom: 30,
     left: 30,
   },
-  slice: {
+  data: {
     volumed: true,
+    hover: {
+      value: 20
+    },
     styles: {
       width: 80,
       color: '#fff',
     },
-    hover: {
-      enable: true,
-      value: 20
-    }
   },
   texts: {
     center: {
