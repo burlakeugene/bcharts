@@ -49,7 +49,7 @@ window.addEventListener('load', () => {
               })(),
             },
             {
-              name: 'Some line data',
+              name: 'Some line data line',
               type: 'line',
               values: (() => {
                 let array = [];

@@ -33,6 +33,7 @@ export default class Plot extends Chart {
       if (!dataset.color) dataset.color = generateRandomColor();
       dataset.values.forEach((value, index) => {
         dataset.values[index] = {
+          name: dataset.name,
           color: dataset.color,
           index,
           value,
@@ -447,6 +448,9 @@ export default class Plot extends Chart {
             text: 'Value: ' + panel.value.toFixed(settings.data.digits),
           },
         ],
+        footer: {
+          text: panel.name,
+        },
       })),
       render: (obj) => {},
     });
