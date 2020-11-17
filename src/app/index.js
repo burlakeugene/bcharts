@@ -69,6 +69,17 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Donut({
         canvas,
+        settings: {
+          texts: {
+            center: {
+              enable: true,
+              text: 'users'
+            },
+            slicePercent: {
+              enable: true
+            }
+          }
+        },
         data: (() => {
           let result = [];
           for (let i = 0; i <= Math.random() * 10; i++) {
@@ -86,6 +97,17 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Pie({
         canvas,
+        settings: {
+          texts: {
+            center: {
+              enable: true,
+              text: 'users'
+            },
+            slicePercent: {
+              enable: true
+            }
+          }
+        },
         data: (() => {
           let result = [];
           for (let i = 0; i <= Math.random() * 10; i++) {

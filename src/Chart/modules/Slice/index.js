@@ -175,7 +175,8 @@ export default class Slices extends Chart {
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.fillStyle = settings.texts.slicePercent.styles.color;
-        let percentRadius = radius;
+        let percentRadius = radius,
+          hoveredValue = settings.data.hover.value * data[i].state;
         if (type === 'donut' && volumed) {
           percentRadius += sliceWidth / 4 + hoveredValue;
         }
@@ -207,7 +208,7 @@ export default class Slices extends Chart {
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = settings.texts.center.styles.color;
-      context.fillText(texts.center.text, x, y);
+      context.fillText(settings.texts.center.text, x, y);
     }
   }
   drawTooltip() {
