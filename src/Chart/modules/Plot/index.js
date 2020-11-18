@@ -279,7 +279,7 @@ export default class Plot extends Chart {
       viewRect = {
         top: offset.top + grid.styles.borderWidth,
         left: offset.left + grid.styles.borderWidth,
-        right: offset.right - grid.styles.borderWidth,
+        right: offset.right + grid.styles.borderWidth,
         bottom: offset.bottom - grid.styles.borderWidth,
         width:
           element.clientWidth -
@@ -323,6 +323,7 @@ export default class Plot extends Chart {
       { lineWidth } = line.styles,
       { values, color } = dataset,
       drawRect = this.getDrawRect('line'),
+      viewRect = this.getDrawRect('view'),
       drawStart = drawRect.left,
       partWidth = drawRect.width / (values.length - 1);
     context.strokeStyle = dataset.color;
@@ -332,10 +333,14 @@ export default class Plot extends Chart {
     values.forEach((value, index) => {
       let x = drawStart + partWidth * index,
         y = this.getInterpolation(value.value, this.getAllValues());
+      value.isFirst = !index;
+      value.isLast = index === values.length - 1;
       value.area = {
-        xStart: x - partWidth / 2,
+        xStart: value.isFirst ? viewRect.left : x - partWidth / 2,
         yStart: drawRect.top,
-        xEnd: x + partWidth / 2,
+        xEnd: value.isLast
+          ? element.clientWidth - viewRect.right
+          : x + partWidth / 2,
         yEnd: drawRect.top + drawRect.height,
       };
       this.checkIsHovered(value);
@@ -374,11 +379,14 @@ export default class Plot extends Chart {
       { bar } = data,
       { values } = dataset,
       drawRect = this.getDrawRect('bar'),
+      viewRect = this.getDrawRect('view'),
       drawStart = drawRect.left,
       partWidth = drawRect.width / values.length;
     data.line.offset.left = partWidth / 2;
     data.line.offset.right = partWidth / 2;
     values.forEach((value, index) => {
+      value.isFirst = !index;
+      value.isLast = index === values.length - 1;
       context.beginPath();
       let color = colorChangeTone(
         dataset.color,
@@ -397,10 +405,14 @@ export default class Plot extends Chart {
         y = this.getInterpolation(value.value, this.getAllValues()),
         y0 = this.getInterpolation(0, this.getAllValues());
       value.area = {
-        xStart: drawStart + partWidth * index,
+        xStart: value.isFirst ? viewRect.left : drawStart + partWidth * index,
         yStart: drawRect.top,
-        xEnd:
-          drawStart + partWidth * index + barWidth * dataset.count + bar.offset,
+        xEnd: value.isLast
+          ? element.clientWidth - viewRect.right
+          : drawStart +
+            partWidth * index +
+            barWidth * dataset.count +
+            bar.offset,
         yEnd: drawRect.top + drawRect.height,
       };
       this.checkIsHovered(value);
