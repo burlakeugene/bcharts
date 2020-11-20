@@ -15,6 +15,7 @@ export default class Plot extends Chart {
     super(props);
   }
   prepareData(data) {
+    if (!data.labels) data.labels = [];
     let maxLength = Math.max(
       ...data.datasets.map((datasets) => (datasets.values || []).length),
       data.labels.length
@@ -197,7 +198,7 @@ export default class Plot extends Chart {
       width = drawRect.width / (data.labels.length - 1),
       y = element.clientHeight - offset.bottom / 2;
     data.labels.forEach((label, index) => {
-      let x = start + width * index;
+      let x = start + (width ? width * index : 0);
       context.font = '100 ' + styles.fontSize + 'px arial';
       context.fillStyle = styles.color;
       context.textAlign = 'center';
@@ -325,7 +326,8 @@ export default class Plot extends Chart {
       drawRect = this.getDrawRect('line'),
       viewRect = this.getDrawRect('view'),
       drawStart = drawRect.left,
-      partWidth = drawRect.width / (values.length - 1);
+      partWidth = drawRect.width / (values.length === 1 ? 1 : values.length - 1);
+    console.log(drawRect.width);
     context.strokeStyle = dataset.color;
     context.lineWidth = lineWidth;
     context.lineJoin = 'round';

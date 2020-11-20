@@ -141,6 +141,11 @@ export default class Chart {
               styles.borderWidth / 2;
             title.x = styles.padding.left + styles.borderWidth / 2;
             title.y = title.height / 2 + styles.borderWidth / 2;
+          } else {
+            title = {
+              width: 0,
+              height: 0,
+            };
           }
           if (panels.length) {
             panels.forEach((panel, index) => {
@@ -366,7 +371,7 @@ export default class Chart {
       if (settings.animated) {
         if (item.state < 1) {
           item.state += step;
-          if(item.state > 1) item.state = 1;
+          if (item.state > 1) item.state = 1;
           this.render({
             from: 'Animated increase state',
           });
@@ -381,7 +386,7 @@ export default class Chart {
       if (settings.animated) {
         if (item.state > 0) {
           item.state -= step;
-          if(item.state < 0) item.state = 0;
+          if (item.state < 0) item.state = 0;
           this.render({
             from: 'Animated decrease state',
           });
