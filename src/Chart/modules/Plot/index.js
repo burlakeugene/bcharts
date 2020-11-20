@@ -430,9 +430,9 @@ export default class Plot extends Chart {
       { area } = item,
       bool =
         cursor.x >= area.xStart &&
-        cursor.x <= area.xEnd &&
+        cursor.x < area.xEnd &&
         cursor.y >= area.yStart &&
-        cursor.y <= area.yEnd;
+        cursor.y < area.yEnd;
     item.isHovered = bool;
     super.hover({
       item,

@@ -4,7 +4,7 @@ window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      dataLength = 10,
+      dataLength = 11,
       chart = new Plot({
         data: {
           labels: (() => {
