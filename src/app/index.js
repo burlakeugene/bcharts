@@ -4,12 +4,12 @@ window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      dataLength = 11,
+      dataLength = 3,
       chart = new Plot({
         data: {
           labels: (() => {
             let array = [];
-            for (let i = 0; i <= dataLength; i++) {
+            for (let i = 0; i <= 3; i++) {
               array.push('Label ' + parseInt(i + 1));
             }
             return array;

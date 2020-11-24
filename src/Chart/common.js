@@ -140,3 +140,14 @@ export const getContrastColor = (hex, bw) => {
 export const isFunction = (func) => {
   return {}.toString.call(func) === '[object Function]';
 };
+
+export const prepareColor = (color) => {
+  if(color.length === 4){
+    let nextColor = '#';
+    for(let i = 1; i <= color.length - 1; i++){
+      nextColor += color[i]+color[i];
+    }
+    color = nextColor;
+  }
+  return color;
+}

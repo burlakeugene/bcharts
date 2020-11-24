@@ -5,6 +5,7 @@ import {
   getPointOnArc,
   colorChangeTone,
   getContrastColor,
+  prepareColor
 } from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
@@ -15,12 +16,10 @@ export default class Plot extends Chart {
     super(props);
   }
   prepareData(data) {
-    if (!data.labels) data.labels = [];
     let maxLength = Math.max(
-      ...data.datasets.map((datasets) => (datasets.values || []).length),
-      data.labels.length
+      ...data.datasets.map((datasets) => (datasets.values || []).length)
     );
-    [data.labels, ...data.datasets.map((dataset) => dataset.values)].map(
+    [...data.datasets.map((dataset) => dataset.values)].map(
       (current, index) => {
         if (current.length < maxLength) {
           let countDiff = maxLength - current.length - 1;
@@ -32,15 +31,21 @@ export default class Plot extends Chart {
     );
     data.datasets.forEach((dataset) => {
       if (!dataset.color) dataset.color = generateRandomColor();
+      dataset.color = prepareColor(dataset.color);
       dataset.values.forEach((value, index) => {
         dataset.values[index] = {
           name: dataset.name,
-          color: dataset.color,
+          color: prepareColor(dataset.color),
           index,
           value,
           state: 0,
         };
       });
+    });
+    data.labels.forEach((label, index) => {
+      data.labels[index] = {
+        text: label,
+      };
     });
     let bars = data.datasets.filter((dataset) => {
       return dataset.type === 'bar';
@@ -203,7 +208,9 @@ export default class Plot extends Chart {
       context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(label, x, y);
+      label.xStart = x - width / 2;
+      label.xEnd = x + width / 2;
+      context.fillText(label.text, x, y);
     });
   }
   getDatasets() {
@@ -326,8 +333,8 @@ export default class Plot extends Chart {
       drawRect = this.getDrawRect('line'),
       viewRect = this.getDrawRect('view'),
       drawStart = drawRect.left,
-      partWidth = drawRect.width / (values.length === 1 ? 1 : values.length - 1);
-    console.log(drawRect.width);
+      partWidth =
+        drawRect.width / (values.length === 1 ? 1 : values.length - 1);
     context.strokeStyle = dataset.color;
     context.lineWidth = lineWidth;
     context.lineJoin = 'round';
@@ -441,7 +448,7 @@ export default class Plot extends Chart {
     return bool;
   }
   drawTooltip() {
-    let { settings, data } = this,
+    let { settings, data, cursor } = this,
       hovered = data.datasets.map((dataset) => {
         return dataset.values.filter((value) => value.isHovered);
       });
@@ -449,9 +456,13 @@ export default class Plot extends Chart {
       return [...acc, ...panel];
     }, []);
     if (!hovered.length) return;
+    let labels = data.labels.filter((label) => {
+        return label.xStart <= cursor.x && label.xEnd >= cursor.x;
+      }),
+      label = labels[labels.length - 1];
     super.drawTooltip({
       title: {
-        text: data.labels[hovered[0].index],
+        text: label?.text || '',
       },
       panels: hovered.map((panel) => ({
         colorPanel: {
