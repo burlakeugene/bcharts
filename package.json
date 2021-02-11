@@ -9,7 +9,8 @@
     "chart",
     "line",
     "donut",
-    "pie"
+    "pie",
+    "radar"
   ],
   "bugs": {
     "url": "https://github.com/burlakeugene/bchart/issues"

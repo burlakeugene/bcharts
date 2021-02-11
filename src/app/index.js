@@ -1,11 +1,11 @@
-import { Plot, Donut, Pie } from '../package';
+import Chart from '../package';
 import './styles.scss';
 window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
       dataLength = 3,
-      chart = new Plot({
+      chart = new Chart.Plot({
         data: {
           labels: (() => {
             let array = [];
@@ -78,7 +78,7 @@ window.addEventListener('load', () => {
   let donutCharts = document.querySelectorAll('.chart-donut');
   donutCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      chart = new Donut({
+      chart = new Chart.Donut({
         canvas,
         settings: {
           texts: {
@@ -106,7 +106,7 @@ window.addEventListener('load', () => {
   let pieCharts = document.querySelectorAll('.chart-pie');
   pieCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      chart = new Pie({
+      chart = new Chart.Pie({
         canvas,
         settings: {
           texts: {
@@ -127,6 +127,24 @@ window.addEventListener('load', () => {
               label: 'Label ' + i,
             });
           }
+          return result;
+        })(),
+      });
+  });
+
+  let radarCharts = document.querySelectorAll('.chart-radar');
+  radarCharts.forEach((item, index) => {
+    let canvas = item.querySelector('canvas'),
+      chart = new Chart.Radar({
+        canvas,
+        data: (() => {
+          let result = [];
+          // for (let i = 0; i <= Math.random() * 10; i++) {
+          //   result.push({
+          //     value: Math.random().toFixed(2),
+          //     label: 'Label ' + i,
+          //   });
+          // }
           return result;
         })(),
       });
