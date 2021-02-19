@@ -7,8 +7,8 @@ export default class Example extends Chart {
     props.defaultSettings = defaultSettings;
     super(props);
   }
-  prepareData(data = []) {
-    data.forEach((item) => {
+  prepareData(data = {}) {
+    data.datasets.forEach((item) => {
       item.color = item.color || generateRandomColor();
       item.state = item.state || 0;
     });
@@ -30,8 +30,8 @@ export default class Example extends Chart {
         element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
       { volumed } = settings.data,
       piOffset = -(Math.PI / 2),
-      piPart = (Math.PI * 2) / data.length;
-    for (let i = 0; i <= data.length - 1; i++) {
+      piPart = (Math.PI * 2) / data.labels.length;
+    for (let i = 0; i <= data.labels.length - 1; i++) {
       let point = getPointOnArc(x, y, sliceWidth, piOffset + piPart * i);
       context.strokeStyle = scheme.styles.color;
       context.lineWidth = scheme.styles.width;
@@ -60,30 +60,27 @@ export default class Example extends Chart {
         context.fill();
         context.stroke();
       }
-      if(labels.enable){
-        for (let i = 0; i <= data.length - 1; i++) {
-          let point = getPointOnArc(x, y, sliceWidth + labels.offset, piOffset + piPart * i);
-          let label = data[i]?.label || '';
-          context.font = '100 ' + labels.styles.fontSize + 'px arial';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.fillStyle = labels.styles.color;
-          // console.log(context.measureText(label));
-          context.fillText(label, point.x, point.y);
-        }
+      if (labels.enable) {
+        context.save();
+        let point = getPointOnArc(
+          x,
+          y,
+          sliceWidth + labels.offset,
+          piOffset + piPart * i
+        );
+        let label = data.labels[i] || '';
+        context.globalAlpha = 1 * state.loading;
+        context.font = '100 ' + labels.styles.fontSize * state.loading + 'px arial';
+        context.textAlign = (() => {
+          if (point.x > x) return 'left';
+          if (point.x < x) return 'right';
+          return 'center';
+        })();
+        context.textBaseline = 'middle';
+        context.fillStyle = labels.styles.color;
+        context.fillText(label, point.x, point.y);
+        context.restore();
       }
-    }
-  }
-  drawLabels() {
-    if (settings.texts.center.enable) {
-      context.font =
-        '800 ' +
-        settings.texts.center.styles.fontSize * state.loading +
-        'px arial';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillStyle = settings.texts.center.styles.color;
-      context.fillText(settings.texts.center.text, point.x, point.y);
     }
   }
   render(info = {}) {

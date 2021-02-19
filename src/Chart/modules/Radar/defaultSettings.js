@@ -1,9 +1,9 @@
 export default {
   offset: {
-    top: 30,
-    right: 30,
-    bottom: 30,
-    left: 30,
+    top: 40,
+    right: 40,
+    bottom: 40,
+    left: 40,
   },
   scheme: {
     count: 3,
@@ -14,7 +14,7 @@ export default {
   },
   labels: {
     enable: true,
-    offset: 20,
+    offset: 15,
     styles: {
       fontSize: 14,
       color: '#ffffff'

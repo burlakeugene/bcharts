@@ -61,9 +61,9 @@ window.addEventListener('load', () => {
         settings: {
           texts: {
             slicePercent: {
-              enable: true
-            }
-          }
+              enable: true,
+            },
+          },
         },
         data: (() => {
           let result = [];
@@ -85,9 +85,9 @@ window.addEventListener('load', () => {
         settings: {
           texts: {
             slicePercent: {
-              enable: true
-            }
-          }
+              enable: true,
+            },
+          },
         },
         data: (() => {
           let result = [];
@@ -107,22 +107,31 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Chart.Radar({
         canvas,
-        data: [{
-          label: 'First',
-          value: 3
-        }, {
-          label: 'Second',
-          value: 2
-        }, {
-          label: 'Third',
-          value: 1
-        }, {
-          label: 'Fourth',
-          value: 1
-        }, {
-          label: 'Fifth',
-          value: 1
-        }]
+        data: {
+          labels: ['First', 'Second', 'Third', 'Fourth', 'Fifth'],
+          datasets: [
+            {
+              name: 'First set',
+              values: [1, 2, 3],
+            },
+            {
+              name: 'Second set',
+              values: [2, 1, 4],
+            },
+            {
+              name: 'Third set',
+              values: [3, 3, 2],
+            },
+            {
+              name: 'Fourth set',
+              values: [2, 3, 4],
+            },
+            {
+              name: 'Fifth set',
+              values: [1, 1, 1],
+            },
+          ],
+        },
       });
   });
 });
