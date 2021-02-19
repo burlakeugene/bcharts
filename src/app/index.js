@@ -4,7 +4,7 @@ window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
-      dataLength = 3,
+      dataLength = 9,
       chart = new Chart.Plot({
         data: {
           labels: (() => {
@@ -38,29 +38,7 @@ window.addEventListener('load', () => {
               })(),
             },
             {
-              name: 'Some bar data 2',
-              type: 'bar',
-              values: (() => {
-                let array = [];
-                for (let i = 0; i <= dataLength; i++) {
-                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
-                }
-                return array;
-              })(),
-            },
-            {
               name: 'Some line data line',
-              type: 'line',
-              values: (() => {
-                let array = [];
-                for (let i = 0; i <= dataLength; i++) {
-                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
-                }
-                return array;
-              })(),
-            },
-            {
-              name: 'Some line data line 2',
               type: 'line',
               values: (() => {
                 let array = [];
@@ -82,10 +60,6 @@ window.addEventListener('load', () => {
         canvas,
         settings: {
           texts: {
-            center: {
-              enable: true,
-              text: 'users'
-            },
             slicePercent: {
               enable: true
             }
@@ -110,10 +84,6 @@ window.addEventListener('load', () => {
         canvas,
         settings: {
           texts: {
-            center: {
-              enable: true,
-              text: 'users'
-            },
             slicePercent: {
               enable: true
             }
@@ -137,16 +107,22 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       chart = new Chart.Radar({
         canvas,
-        data: (() => {
-          let result = [];
-          // for (let i = 0; i <= Math.random() * 10; i++) {
-          //   result.push({
-          //     value: Math.random().toFixed(2),
-          //     label: 'Label ' + i,
-          //   });
-          // }
-          return result;
-        })(),
+        data: [{
+          label: 'First',
+          value: 3
+        }, {
+          label: 'Second',
+          value: 2
+        }, {
+          label: 'Third',
+          value: 1
+        }, {
+          label: 'Fourth',
+          value: 1
+        }, {
+          label: 'Fifth',
+          value: 1
+        }]
       });
   });
 });

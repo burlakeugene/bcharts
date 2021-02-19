@@ -77,7 +77,6 @@ export default class Slices extends Chart {
         element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
       { volumed } = settings.data,
       piOffset = -(Math.PI / 2);
-    data = this.prepareData(data);
     if (type === 'pie') {
       sliceWidth = sideSize / 2;
       radius = sideSize / 4;
