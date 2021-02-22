@@ -112,23 +112,23 @@ window.addEventListener('load', () => {
           datasets: [
             {
               name: 'First set',
-              values: [1, 2, 3],
+              values: [1, 2, 3, 4, 9],
             },
             {
               name: 'Second set',
-              values: [2, 1, 4],
+              values: [2, 1, 4, 8, 2],
             },
             {
               name: 'Third set',
-              values: [3, 3, 2],
+              values: [3, 3, 2, 4, 1],
             },
             {
               name: 'Fourth set',
-              values: [2, 3, 4],
+              values: [2, 3, 4, 8, 2],
             },
             {
               name: 'Fifth set',
-              values: [1, 1, 1],
+              values: [1, 1, 1, 9, 3],
             },
           ],
         },

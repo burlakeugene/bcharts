@@ -81,6 +81,12 @@ export default class Example extends Chart {
         context.fillText(label, point.x, point.y);
         context.restore();
       }
+      for(let s = 0; s <= data.datasets.length - 1; s++){
+        let current = data.datasets[s],
+          currentData = current.values[i];
+        
+        // console.log(current, currentData);
+      }
     }
   }
   render(info = {}) {
