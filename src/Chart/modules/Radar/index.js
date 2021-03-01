@@ -70,7 +70,8 @@ export default class Example extends Chart {
         );
         let label = data.labels[i] || '';
         context.globalAlpha = 1 * state.loading;
-        context.font = '100 ' + labels.styles.fontSize * state.loading + 'px arial';
+        context.font =
+          '100 ' + labels.styles.fontSize * state.loading + 'px arial';
         context.textAlign = (() => {
           if (point.x > x) return 'left';
           if (point.x < x) return 'right';
@@ -81,12 +82,37 @@ export default class Example extends Chart {
         context.fillText(label, point.x, point.y);
         context.restore();
       }
-      for(let s = 0; s <= data.datasets.length - 1; s++){
+      let flatList = data.datasets
+          .map((data) => {
+            return data.values;
+          })
+          .flat(),
+        max = Math.max(...flatList),
+        min = Math.min(...flatList),
+        diff = max - min;
+
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 1;
+      context.beginPath();
+      for (let s = 0; s <= data.datasets.length - 1; s++) {
         let current = data.datasets[s],
-          currentData = current.values[i];
-        
+          currentData = current.values[i],
+          percent = (currentData - min) / diff,
+          point = getPointOnArc(
+            x,
+            y,
+            (sliceWidth * percent) * state.loading,
+            piOffset + piPart * i
+          );
+        if (s === 0) {
+          context.moveTo(point.x, point.y);
+        } else {
+          context.lineTo(point.x, point.y);
+        }
         // console.log(current, currentData);
       }
+      context.fill();
+      context.stroke();
     }
   }
   render(info = {}) {
