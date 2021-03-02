@@ -8,9 +8,16 @@ export default class Example extends Chart {
     super(props);
   }
   prepareData(data = {}) {
+    let labels = data.labels;
     data.datasets.forEach((item) => {
       item.color = item.color || generateRandomColor();
       item.state = item.state || 0;
+      if(item.values.length > labels.length) item.values.length = labels.length;
+      if(item.values.length < labels.length){
+        for(let i = item.values.length; i < labels.length; i++){
+          item.values.push(0)
+        }
+      }
     });
     return data;
   }
@@ -82,37 +89,53 @@ export default class Example extends Chart {
         context.fillText(label, point.x, point.y);
         context.restore();
       }
-      let flatList = data.datasets
-          .map((data) => {
-            return data.values;
-          })
-          .flat(),
-        max = Math.max(...flatList),
-        min = Math.min(...flatList),
-        diff = max - min;
+    }
+    let flatList = data.datasets
+        .map((data) => {
+          return data.values;
+        })
+        .flat(),
+      max = Math.max(...flatList);
 
-      context.strokeStyle = '#ffffff';
+    for (let i = 0; i <= data.datasets.length - 1; i++) {
+      let dataset = data.datasets[i];
+      context.strokeStyle = dataset.color;
+      context.fillStyle = dataset.color;
       context.lineWidth = 1;
       context.beginPath();
-      for (let s = 0; s <= data.datasets.length - 1; s++) {
-        let current = data.datasets[s],
-          currentData = current.values[i],
-          percent = (currentData - min) / diff,
+      for (let d = 0; d <= dataset.values.length - 1; d++) {
+        let value = dataset.values[d],
+          percent = value / max,
           point = getPointOnArc(
             x,
             y,
-            (sliceWidth * percent) * state.loading,
-            piOffset + piPart * i
+            sliceWidth * percent * state.loading,
+            piOffset + piPart * d
           );
-        if (s === 0) {
-          context.moveTo(point.x, point.y);
-        } else {
-          context.lineTo(point.x, point.y);
-        }
-        // console.log(current, currentData);
+        d === 0
+          ? context.moveTo(point.x, point.y)
+          : context.lineTo(point.x, point.y);
       }
+      context.globalAlpha = 0.5;
       context.fill();
+      context.globalAlpha = 1;
+      context.closePath();
       context.stroke();
+      for (let d = 0; d <= dataset.values.length - 1; d++) {
+        let value = dataset.values[d],
+          percent = value / max,
+          point = getPointOnArc(
+            x,
+            y,
+            sliceWidth * percent * state.loading,
+            piOffset + piPart * d
+          );
+        context.beginPath();
+        context.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+        context.fill();
+        context.closePath();
+        context.stroke();
+      }
     }
   }
   render(info = {}) {
