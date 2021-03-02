@@ -112,7 +112,7 @@ window.addEventListener('load', () => {
           datasets: [
             {
               name: 'First set',
-              values: [0, 2, 0, 4, 9],
+              values: [3, 2, 3, 4, 9],
             },
             {
               name: 'Second set',
