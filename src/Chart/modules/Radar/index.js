@@ -2,6 +2,7 @@ import {
   generateRandomColor,
   getPointOnArc,
   intersectionPolygon,
+  colorChangeTone,
 } from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
@@ -13,7 +14,7 @@ export default class Example extends Chart {
   }
   prepareData(data = {}) {
     let labels = data.labels;
-    data.datasets.forEach((item, index) => {
+    data.datasets.forEach((item, parentIndex) => {
       item.color = item.color || generateRandomColor();
       item.state = item.state || 0;
       if (item.values.length > labels.length)
@@ -23,10 +24,11 @@ export default class Example extends Chart {
           item.values.push(0);
         }
       }
-      item.values = item.values.map((value) => {
+      item.values = item.values.map((value, index) => {
         return {
           value,
-          parentIndex: index,
+          parentIndex,
+          index,
         };
       });
     });
@@ -64,12 +66,26 @@ export default class Example extends Chart {
       hovered = data.filter((item) => {
         return item.hovered;
       });
-    // console.log(hovered);
     if (hovered.length) {
       super.drawTooltip({
         title: {
-          text: labels[hovered[0]['parentIndex']],
+          text: labels[hovered[0]['index']],
         },
+        panels: hovered.map((item) => {
+          return {
+            colorPanel: {
+              color: this.data.datasets[item['parentIndex']].color,
+            },
+            texts: [
+              {
+                text: 'Value: ' + item.value,
+              },
+            ],
+            footer: {
+              text: this.data.datasets[item['parentIndex']].name,
+            },
+          };
+        }),
         render: (obj) => {},
       });
     }
@@ -192,9 +208,8 @@ export default class Example extends Chart {
             coords.y,
             coords.widthHalf * percent * state.loading,
             coords.piStart + coords.piPart * d
-          );
-        value.hovered = intersectionPolygon({
-          polygon: [
+          ),
+          polygon = [
             {
               x: coords.x,
               y: coords.y,
@@ -203,21 +218,23 @@ export default class Example extends Chart {
               coords.x,
               coords.y,
               coords.widthHalf,
-              coords.piStart + coords.piPart * i - coords.piPart / 2
+              coords.piStart + coords.piPart * d - coords.piPart / 2
             ),
             getPointOnArc(
               coords.x,
               coords.y,
               coords.widthHalf,
-              coords.piStart + coords.piPart * i
+              coords.piStart + coords.piPart * d
             ),
             getPointOnArc(
               coords.x,
               coords.y,
               coords.widthHalf,
-              coords.piStart + coords.piPart * i + coords.piPart / 2
+              coords.piStart + coords.piPart * d + coords.piPart / 2
             ),
-          ],
+          ];
+        value.hovered = intersectionPolygon({
+          polygon,
           x: cursor.x,
           y: cursor.y,
         });
