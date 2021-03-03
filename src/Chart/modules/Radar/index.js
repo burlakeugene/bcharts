@@ -1,4 +1,8 @@
-import { generateRandomColor, getPointOnArc } from '../../common';
+import {
+  generateRandomColor,
+  getPointOnArc,
+  intersectionPolygon,
+} from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
 
@@ -9,57 +13,99 @@ export default class Example extends Chart {
   }
   prepareData(data = {}) {
     let labels = data.labels;
-    data.datasets.forEach((item) => {
+    data.datasets.forEach((item, index) => {
       item.color = item.color || generateRandomColor();
       item.state = item.state || 0;
-      if(item.values.length > labels.length) item.values.length = labels.length;
-      if(item.values.length < labels.length){
-        for(let i = item.values.length; i < labels.length; i++){
-          item.values.push(0)
+      if (item.values.length > labels.length)
+        item.values.length = labels.length;
+      if (item.values.length < labels.length) {
+        for (let i = item.values.length; i < labels.length; i++) {
+          item.values.push(0);
         }
       }
+      item.values = item.values.map((value) => {
+        return {
+          value,
+          parentIndex: index,
+        };
+      });
     });
     return data;
   }
-  drawTooltip() {}
-  drawRadar() {
-    let { canvas, settings, data, cursor, type, state } = this,
+  getCoords() {
+    let { canvas, settings, data } = this,
       { context, element } = canvas,
-      { scheme, labels } = settings,
-      sideSize = Math.min(
+      width = Math.min(
         element.clientHeight - settings.offset.top - settings.offset.bottom,
         element.clientWidth - settings.offset.left - settings.offset.right
       ),
-      sliceWidth = sideSize / 2,
       x =
         element.clientWidth / 2 + settings.offset.left - settings.offset.right,
       y =
         element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
-      { volumed } = settings.data,
-      piOffset = -(Math.PI / 2),
+      piStart = -(Math.PI / 2),
       piPart = (Math.PI * 2) / data.labels.length;
+    return {
+      width,
+      widthHalf: width / 2,
+      x,
+      y,
+      piStart,
+      piPart,
+    };
+  }
+  drawTooltip() {
+    let data = this.data.datasets
+        .map((dataset) => {
+          return dataset.values;
+        })
+        .flat(),
+      { labels } = this.data,
+      hovered = data.filter((item) => {
+        return item.hovered;
+      });
+    // console.log(hovered);
+    if (hovered.length) {
+      super.drawTooltip({
+        title: {
+          text: labels[hovered[0]['parentIndex']],
+        },
+        render: (obj) => {},
+      });
+    }
+  }
+  drawScheme() {
+    let { canvas, settings, data, cursor, type, state } = this,
+      { context, element } = canvas,
+      { scheme } = settings,
+      coords = this.getCoords();
     for (let i = 0; i <= data.labels.length - 1; i++) {
-      let point = getPointOnArc(x, y, sliceWidth, piOffset + piPart * i);
+      let point = getPointOnArc(
+        coords.x,
+        coords.y,
+        coords.widthHalf,
+        coords.piStart + coords.piPart * i
+      );
       context.strokeStyle = scheme.styles.color;
       context.lineWidth = scheme.styles.width;
       context.beginPath();
-      context.moveTo(x, y);
+      context.moveTo(coords.x, coords.y);
       context.lineTo(point.x, point.y);
       context.fill();
       context.stroke();
       for (let l = 0; l <= scheme.count; l++) {
-        let partSliceWidth = sliceWidth / scheme.count;
+        let partSliceWidth = coords.widthHalf / scheme.count;
         let currentPoint = getPointOnArc(
-            x,
-            y,
-            sliceWidth - partSliceWidth * l,
-            piOffset + piPart * i
+            coords.x,
+            coords.y,
+            coords.widthHalf - partSliceWidth * l,
+            coords.piStart + coords.piPart * i
           ),
           prevPoint = getPointOnArc(
-            x,
-            y,
-            sliceWidth - partSliceWidth * l,
-            piOffset + piPart * (i - 1)
+            coords.x,
+            coords.y,
+            coords.widthHalf - partSliceWidth * l,
+            coords.piStart + coords.piPart * (i - 1)
           );
         context.beginPath();
         context.moveTo(currentPoint.x, currentPoint.y);
@@ -67,21 +113,29 @@ export default class Example extends Chart {
         context.fill();
         context.stroke();
       }
+    }
+  }
+  drawLabels() {
+    let { canvas, settings, data, cursor, type, state } = this,
+      { context, element } = canvas,
+      { labels } = settings,
+      coords = this.getCoords();
+    for (let i = 0; i <= data.labels.length - 1; i++) {
       if (labels.enable) {
         context.save();
         let point = getPointOnArc(
-          x,
-          y,
-          sliceWidth + labels.offset,
-          piOffset + piPart * i
+          coords.x,
+          coords.y,
+          coords.widthHalf + labels.offset,
+          coords.piStart + coords.piPart * i
         );
         let label = data.labels[i] || '';
         context.globalAlpha = 1 * state.loading;
         context.font =
           '100 ' + labels.styles.fontSize * state.loading + 'px arial';
         context.textAlign = (() => {
-          if (point.x > x) return 'left';
-          if (point.x < x) return 'right';
+          if (point.x > coords.x) return 'left';
+          if (point.x < coords.x) return 'right';
           return 'center';
         })();
         context.textBaseline = 'middle';
@@ -90,11 +144,19 @@ export default class Example extends Chart {
         context.restore();
       }
     }
-    let flatList = data.datasets
+  }
+  drawData() {
+    let { canvas, settings, data, cursor, type, state } = this,
+      { context, element } = canvas,
+      coords = this.getCoords(),
+      flatList = data.datasets
         .map((data) => {
           return data.values;
         })
-        .flat(),
+        .flat()
+        .map((value) => {
+          return value.value;
+        }),
       max = Math.max(...flatList);
 
     for (let i = 0; i <= data.datasets.length - 1; i++) {
@@ -105,13 +167,14 @@ export default class Example extends Chart {
       context.beginPath();
       for (let d = 0; d <= dataset.values.length - 1; d++) {
         let value = dataset.values[d],
-          percent = value / max,
+          percent = value.value / max,
           point = getPointOnArc(
-            x,
-            y,
-            sliceWidth * percent * state.loading,
-            piOffset + piPart * d
+            coords.x,
+            coords.y,
+            coords.widthHalf * percent * state.loading,
+            coords.piStart + coords.piPart * d
           );
+        value.coords = point;
         d === 0
           ? context.moveTo(point.x, point.y)
           : context.lineTo(point.x, point.y);
@@ -123,15 +186,47 @@ export default class Example extends Chart {
       context.stroke();
       for (let d = 0; d <= dataset.values.length - 1; d++) {
         let value = dataset.values[d],
-          percent = value / max,
+          percent = value.value / max,
           point = getPointOnArc(
-            x,
-            y,
-            sliceWidth * percent * state.loading,
-            piOffset + piPart * d
+            coords.x,
+            coords.y,
+            coords.widthHalf * percent * state.loading,
+            coords.piStart + coords.piPart * d
           );
+        value.hovered = intersectionPolygon({
+          polygon: [
+            {
+              x: coords.x,
+              y: coords.y,
+            },
+            getPointOnArc(
+              coords.x,
+              coords.y,
+              coords.widthHalf,
+              coords.piStart + coords.piPart * i - coords.piPart / 2
+            ),
+            getPointOnArc(
+              coords.x,
+              coords.y,
+              coords.widthHalf,
+              coords.piStart + coords.piPart * i
+            ),
+            getPointOnArc(
+              coords.x,
+              coords.y,
+              coords.widthHalf,
+              coords.piStart + coords.piPart * i + coords.piPart / 2
+            ),
+          ],
+          x: cursor.x,
+          y: cursor.y,
+        });
+        super.hover({
+          item: value,
+          isHovered: value.hovered,
+        });
         context.beginPath();
-        context.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+        context.arc(point.x, point.y, 3 * state.loading, 0, 2 * Math.PI);
         context.fill();
         context.closePath();
         context.stroke();
@@ -143,7 +238,9 @@ export default class Example extends Chart {
     if (this.renderTimeout) clearTimeout(this.renderTimeout);
     this.renderTimeout = setTimeout(() => {
       super.baseRender();
-      this.drawRadar();
+      this.drawScheme();
+      this.drawLabels();
+      this.drawData();
       this.drawTooltip();
     }, time / 60);
   }

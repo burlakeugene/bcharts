@@ -4,6 +4,7 @@ import {
   getPointOnArc,
   colorChangeTone,
   getContrastColor,
+  intersectionPolygon,
 } from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
@@ -41,19 +42,6 @@ export default class Slices extends Chart {
       );
     }
     return polygon;
-  }
-  isPathHover({ x, y, polygon }) {
-    var inside = false;
-    for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      var xi = polygon[i].x,
-        yi = polygon[i].y;
-      var xj = polygon[j].x,
-        yj = polygon[j].y;
-      var intersect =
-        yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
-    }
-    return inside;
   }
   drawSlices() {
     let { canvas, settings, data, cursor, type, state } = this,
@@ -105,7 +93,7 @@ export default class Slices extends Chart {
           startPi,
           endPi,
         }),
-        mouseInPath = this.isPathHover({
+        mouseInPath = intersectionPolygon({
           x: cursor.x,
           y: cursor.y,
           polygon,
