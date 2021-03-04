@@ -179,7 +179,7 @@ export default class Example extends Chart {
       let dataset = data.datasets[i];
       context.strokeStyle = dataset.color;
       context.fillStyle = dataset.color;
-      context.lineWidth = 1;
+      context.lineWidth = settings.data.line.styles.width;
       context.beginPath();
       for (let d = 0; d <= dataset.values.length - 1; d++) {
         let value = dataset.values[d],
@@ -242,11 +242,22 @@ export default class Example extends Chart {
           item: value,
           isHovered: value.hovered,
         });
-        context.beginPath();
-        context.arc(point.x, point.y, 3 * state.loading, 0, 2 * Math.PI);
-        context.fill();
-        context.closePath();
-        context.stroke();
+
+        if (settings.data.dots.enable) {
+          let dotSize = settings.data.dots.styles.width * state.loading;
+          if(value.hasOwnProperty('state')) dotSize += (settings.data.dots.styles.hover.width - settings.data.dots.styles.width) * value.state;
+          context.beginPath();
+          context.arc(
+            point.x,
+            point.y,
+            dotSize,
+            0,
+            2 * Math.PI
+          );
+          context.fill();
+          context.closePath();
+          context.stroke();
+        }
       }
     }
   }
