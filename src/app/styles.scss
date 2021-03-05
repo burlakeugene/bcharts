@@ -15,16 +15,17 @@ html {
   width: 100%;
 }
 
-.charts{
+.charts {
   height: 100%;
   font-size: 0;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .chart {
-  width: 50%;
+  flex: 0 0 50%;
   height: 50%;
   user-select: none;
-  display: inline-block;
   canvas {
     height: 100%;
     width: 100%;

@@ -105,21 +105,23 @@ window.addEventListener('load', () => {
   let radarCharts = document.querySelectorAll('.chart-radar');
   radarCharts.forEach((item, index) => {
     let canvas = item.querySelector('canvas'),
+      dataCount = 6,
+      data = {
+        labels: new Array(dataCount).fill().map((item, index) => {
+          return 'Label ' + index;
+        }),
+        datasets: new Array(2).fill().map((item, index) => {
+          return {
+            name: 'Dataset ' + index,
+            values: new Array(dataCount).fill().map((item, index) => {
+              return Math.ceil(Math.random() * 10);
+            }),
+          };
+        }),
+      },
       chart = new Chart.Radar({
         canvas,
-        data: {
-          labels: ['First', 'Second', 'Third', 'Fourth', 'Fifth'],
-          datasets: [
-            {
-              name: 'First set',
-              values: [3, 2, 3, 4, 9],
-            },
-            {
-              name: 'Second set',
-              values: [2, 1, 4, 8, 2],
-            },
-          ],
-        },
+        data
       });
   });
 });
