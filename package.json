@@ -1,9 +1,9 @@
 {
-  "name": "bchart",
-  "version": "1.0.11",
+  "name": "bcharts",
+  "version": "1.0.00",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/burlakeugene/bchart.git"
+    "url": "git+https://github.com/burlakeugene/bcharts.git"
   },
   "keywords": [
     "chart",
@@ -13,9 +13,9 @@
     "radar"
   ],
   "bugs": {
-    "url": "https://github.com/burlakeugene/bchart/issues"
+    "url": "https://github.com/burlakeugene/bcharts/issues"
   },
-  "homepage": "https://burlakeugene.github.io/bchart/",
+  "homepage": "https://burlakeugene.github.io/bcharts/",
   "main": "package/bundle.js",
   "author": "Eugene Burlak <burlakeugene@gmail.com>",
   "license": "MIT",
