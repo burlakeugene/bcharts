@@ -15,6 +15,9 @@ export default class Slices extends Chart {
     super(props);
   }
   prepareData(data = []) {
+    data = data.filter((item) => {
+      return item.value > 0;
+    });
     let total = data.reduce(
       (acc, item) => acc + (parseFloat(item.value) || 0),
       0

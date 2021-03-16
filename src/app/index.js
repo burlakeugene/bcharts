@@ -73,6 +73,10 @@ window.addEventListener('load', () => {
               label: 'Label ' + i,
             });
           }
+          result.push({
+            value: 0,
+            label: '3232',
+          });
           return result;
         })(),
       });
@@ -121,7 +125,7 @@ window.addEventListener('load', () => {
       },
       chart = new Chart.Radar({
         canvas,
-        data
+        data,
       });
   });
 });
