@@ -5,7 +5,7 @@ import {
   getPointOnArc,
   colorChangeTone,
   getContrastColor,
-  prepareColor
+  prepareColor,
 } from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
@@ -272,12 +272,12 @@ export default class Plot extends Chart {
       this['draw' + type] && this['draw' + type](dataset);
     });
     let lines = datasets.filter((dataset) => {
-      return dataset.type === 'line';
+      return dataset.type === 'line' || dataset.type === 'dot';
     });
     lines.forEach((dataset) => {
       let { type } = dataset;
       type = type.toUpperCase();
-      this['draw' + type] && this['draw' + type](dataset);
+      this['drawLINE'] && this['drawLINE'](dataset);
     });
   }
   getDrawRect(type) {
@@ -335,13 +335,11 @@ export default class Plot extends Chart {
       drawStart = drawRect.left,
       partWidth =
         drawRect.width / (values.length === 1 ? 1 : values.length - 1);
-    context.strokeStyle = dataset.color;
-    context.lineWidth = lineWidth;
-    context.lineJoin = 'round';
-    context.beginPath();
     values.forEach((value, index) => {
       let x = drawStart + partWidth * index,
         y = this.getInterpolation(value.value, this.getAllValues());
+      value.x = x;
+      value.y = y;
       value.isFirst = !index;
       value.isLast = index === values.length - 1;
       value.area = {
@@ -353,23 +351,30 @@ export default class Plot extends Chart {
         yEnd: drawRect.top + drawRect.height,
       };
       this.checkIsHovered(value);
-      if (!index) {
-        context.moveTo(x, y);
-      } else {
-        context.lineTo(x, y);
-      }
     });
-    context.stroke();
-    if (line?.dots?.enable) {
+    if (dataset.type === 'line') {
+      context.strokeStyle = dataset.color;
+      context.lineWidth = lineWidth;
+      context.lineJoin = 'round';
+      context.beginPath();
+      values.forEach((value, index) => {
+        this.checkIsHovered(value);
+        if (!index) {
+          context.moveTo(value.x, value.y);
+        } else {
+          context.lineTo(value.x, value.y);
+        }
+      });
+      context.stroke();
+    }
+    if (dataset.type === 'dot' || line?.dots?.enable) {
       context.fillStyle = dataset.color;
       context.strokeStyle = colorChangeTone(dataset.color, -50);
       values.forEach((value, index) => {
         context.beginPath();
-        let x = drawStart + partWidth * index,
-          y = this.getInterpolation(value.value, this.getAllValues());
         context.arc(
-          x,
-          y,
+          value.x,
+          value.y,
           line.dots.width +
             (line.dots.hover.enable ? line.dots.hover.width * value.state : 0),
           0,

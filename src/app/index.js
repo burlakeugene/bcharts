@@ -48,6 +48,17 @@ window.addEventListener('load', () => {
                 return array;
               })(),
             },
+            {
+              name: 'Some line data dot',
+              type: 'dot',
+              values: (() => {
+                let array = [];
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
+                }
+                return array;
+              })(),
+            },
           ],
         },
         canvas,
