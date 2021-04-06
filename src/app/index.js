@@ -84,10 +84,6 @@ window.addEventListener('load', () => {
               label: 'Label ' + i,
             });
           }
-          result.push({
-            value: 0,
-            label: '3232',
-          });
           return result;
         })(),
       });
@@ -135,6 +131,29 @@ window.addEventListener('load', () => {
         }),
       },
       chart = new Chart.Radar({
+        canvas,
+        data,
+      });
+  });
+
+  let funnelCharts = document.querySelectorAll('.chart-funnel');
+  funnelCharts.forEach((item, index) => {
+    let canvas = item.querySelector('canvas'),
+      data = [
+        {
+          label: 'Registrations',
+          value: 33,
+        },
+        {
+          label: 'Email approvment',
+          value: 22,
+        },
+        {
+          label: 'Deposit',
+          value: 3,
+        },
+      ],
+      chart = new Chart.Funnel({
         canvas,
         data,
       });
