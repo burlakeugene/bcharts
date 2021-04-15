@@ -4,6 +4,34 @@ function padZero(str, len) {
   return (zeros + str).slice(-len);
 }
 
+function padToTwo(numberString) {
+  if (numberString.length < 2) {
+    numberString = '0' + numberString;
+  }
+  return numberString;
+}
+
+export const hexAverage = (colors) => {
+  return colors
+    .reduce(
+      function (previousValue, currentValue) {
+        return currentValue
+          .replace(/^#/, '')
+          .match(/.{2}/g)
+          .map(function (value, index) {
+            return previousValue[index] + parseInt(value, 16);
+          });
+      },
+      [0, 0, 0]
+    )
+    .reduce(function (previousValue, currentValue) {
+      return (
+        previousValue +
+        padToTwo(Math.floor(currentValue / colors.length).toString(16))
+      );
+    }, '#');
+};
+
 export const generateDate = (time, format = 'hh:ii:ss') => {
   let result = '';
   time = new Date(time);
@@ -142,15 +170,15 @@ export const isFunction = (func) => {
 };
 
 export const prepareColor = (color) => {
-  if(color.length === 4){
+  if (color.length === 4) {
     let nextColor = '#';
-    for(let i = 1; i <= color.length - 1; i++){
-      nextColor += color[i]+color[i];
+    for (let i = 1; i <= color.length - 1; i++) {
+      nextColor += color[i] + color[i];
     }
     color = nextColor;
   }
   return color;
-}
+};
 
 export const intersectionPolygon = ({ x, y, polygon }) => {
   var inside = false;
@@ -164,4 +192,4 @@ export const intersectionPolygon = ({ x, y, polygon }) => {
     if (intersect) inside = !inside;
   }
   return inside;
-}
+};

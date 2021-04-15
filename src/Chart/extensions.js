@@ -26,3 +26,68 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
   this.closePath();
   return this;
 };
+
+CanvasRenderingContext2D.prototype.bezierCurveMulti = function (
+  points,
+  tension
+) {
+  tension = tension || 0.25;
+  var l = points.length;
+  if (l < 2) return;
+  if (l == 2) {
+    this.moveTo(points[0][0], points[0][1]);
+    this.lineTo(points[1][0], points[1][1]);
+    return this;
+  }
+  function h(x, y) {
+    return Math.sqrt(x * x + y * y);
+  }
+  var cpoints = [];
+  points.forEach(function () {
+    cpoints.push({});
+  });
+
+  for (var i = 1; i < l - 1; i++) {
+    var pi = points[i],
+      pp = points[i - 1],
+      pn = points[i + 1],
+      rdx = pn[0] - pp[0],
+      rdy = pn[1] - pp[1],
+      rd = h(rdx, rdy),
+      dx = rdx / rd,
+      dy = rdy / rd,
+      dp = h(pi[0] - pp[0], pi[1] - pp[1]),
+      dn = h(pi[0] - pn[0], pi[1] - pn[1]),
+      cpx = pi[0] - dx * dp * tension,
+      cpy = pi[1] - dy * dp * tension,
+      cnx = pi[0] + dx * dn * tension,
+      cny = pi[1] + dy * dn * tension;
+
+    cpoints[i] = {
+      cp: [cpx, cpy],
+      cn: [cnx, cny],
+    };
+  }
+  cpoints[0] = {
+    cn: [
+      (points[0][0] + cpoints[1].cp[0]) / 2,
+      (points[0][1] + cpoints[1].cp[1]) / 2,
+    ],
+  };
+  cpoints[l - 1] = {
+    cp: [
+      (points[l - 1][0] + cpoints[l - 2].cn[0]) / 2,
+      (points[l - 1][1] + cpoints[l - 2].cn[1]) / 2,
+    ],
+  };
+
+  this.moveTo(points[0][0], points[0][1]);
+
+  for (i = 1; i < l; i++) {
+    var p = points[i],
+      cp = cpoints[i],
+      cpp = cpoints[i - 1];
+    this.bezierCurveTo(cpp.cn[0], cpp.cn[1], cp.cp[0], cp.cp[1], p[0], p[1]);
+  }
+  return this;
+};

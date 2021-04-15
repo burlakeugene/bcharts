@@ -19,6 +19,10 @@ export default {
       color: '#fff',
     },
   },
+  area: {
+    gradient: true,
+    smooth: true
+  },
   hover: {
     enable: true,
     value: 15

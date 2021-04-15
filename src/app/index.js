@@ -141,6 +141,10 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       data = [
         {
+          label: 'Deposit',
+          value: 3,
+        },
+        {
           label: 'Registrations',
           value: 33,
         },

@@ -2,6 +2,7 @@ import {
   generateRandomColor,
   intersectionPolygon,
   colorChangeTone,
+  hexAverage,
 } from '../../common';
 import defaultSettings from './defaultSettings';
 import Chart from '../chart';
@@ -65,9 +66,12 @@ export default class Example extends Chart {
       max = Math.max(...data.map((item) => item.value)),
       rect = this.getDrawRect();
     data = this.prepareData(data);
+    let bezierLeft = [],
+      bezierRight = [];
     for (let i = 0; i <= data.length - 1; i++) {
       let item = data[i],
         nextItem = data[i + 1],
+        prevItem = data[i - 1],
         yStart = rect.yStart + rect.partHeight * i,
         yEnd = yStart + rect.partHeight,
         width = (item.value / max) * rect.width,
@@ -76,17 +80,38 @@ export default class Example extends Chart {
       nextWidth *= state.loading;
       context.beginPath();
       context.strokeStyle = 'transparent';
-      context.fillStyle = colorChangeTone(
+      let color = colorChangeTone(
         item.color,
         settings.hover.enable && item.state
           ? settings.hover.value * item.state
           : 1
       );
+      if (settings.area?.gradient) {
+        let nextColor = nextItem
+            ? colorChangeTone(
+                nextItem.color,
+                settings.hover.enable && nextItem.state
+                  ? settings.hover.value * nextItem.state
+                  : 1
+              )
+            : color,
+          prevColor = prevItem
+            ? colorChangeTone(
+                prevItem.color,
+                settings.hover.enable && prevItem.state
+                  ? settings.hover.value * prevItem.state
+                  : 1
+              )
+            : color,
+          gradient = context.createLinearGradient(0, yStart, 0, yEnd);
+        gradient.addColorStop(0, hexAverage([prevColor, color]));
+        gradient.addColorStop(0.3, color);
+        gradient.addColorStop(0.7, color);
+        gradient.addColorStop(1, hexAverage([color, nextColor]));
+        color = gradient;
+      }
+      context.fillStyle = context.strokeStyle = color;
       let polygon = [
-        {
-          x: rect.center + width / 2,
-          y: yStart,
-        },
         {
           x: rect.center - width / 2,
           y: yStart,
@@ -99,7 +124,17 @@ export default class Example extends Chart {
           x: rect.center + nextWidth / 2,
           y: yEnd,
         },
+        {
+          x: rect.center + width / 2,
+          y: yStart,
+        },
       ];
+      if (!i) {
+        bezierLeft.push([polygon[0].x, polygon[0].y]);
+        bezierRight.push([polygon[3].x, polygon[3].y]);
+      }
+      bezierLeft.push([polygon[1].x, polygon[1].y]);
+      bezierRight.push([polygon[2].x, polygon[2].y]);
       for (let p = 0; p <= polygon.length - 1; p++) {
         if (p === 0) context.moveTo(polygon[p].x, polygon[p].y);
         else context.lineTo(polygon[p].x, polygon[p].y);
@@ -145,6 +180,16 @@ export default class Example extends Chart {
       }
       context.restore();
     }
+    bezierRight.reverse();
+    // context.fillStyle = context.strokeStyle = 'red';
+    // context.beginPath();
+    // context.moveTo(bezierLeft[0][0], bezierLeft[0][1]);
+    // context.bezierCurveMulti(bezierLeft);
+    // context.moveTo(bezierRight[0][0], bezierRight[0][1]);
+    // context.bezierCurveMulti(bezierRight);
+    // context.stroke();
+    // context.fill();
+    // console.log(bezierLeft, bezierRight);
   }
   render(info = {}) {
     let time = 300;
