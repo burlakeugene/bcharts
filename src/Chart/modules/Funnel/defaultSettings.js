@@ -20,7 +20,7 @@ export default {
     },
   },
   area: {
-    gradient: true,
+    gradient: false,
     smooth: true
   },
   hover: {
