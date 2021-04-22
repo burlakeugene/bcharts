@@ -38,6 +38,7 @@ export default {
   values: {
     enable: true,
     digits: 2,
+    count: 10,
     styles: {
       color: '#fff',
       fontSize: 12,

@@ -242,7 +242,7 @@ export default class Plot extends Chart {
     context.fillStyle = styles.color;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    let count = 10,
+    let { count } = values,
       texts = [],
       stepDiff = (max - min) / (count - 1);
     for (let i = 0; i <= count - 1; i++) {
