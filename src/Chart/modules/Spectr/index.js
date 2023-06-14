@@ -1,0 +1,76 @@
+import defaultSettings from './defaultSettings';
+import Chart from '../chart';
+
+import {
+  generateRandomColor,
+  getPointOnArc,
+  intersectionPolygon,
+  colorChangeTone,
+} from '../../common';
+
+export default class Example extends Chart {
+  constructor(props) {
+    props.defaultSettings = defaultSettings;
+    super(props);
+  }
+  getCoords() {
+    let { canvas, settings } = this,
+      { context, element } = canvas,
+      width = Math.min(
+        element.clientHeight - settings.offset.top - settings.offset.bottom,
+        element.clientWidth - settings.offset.left - settings.offset.right
+      ),
+      x =
+        element.clientWidth / 2 + settings.offset.left - settings.offset.right,
+      y =
+        element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
+      piStart = -(Math.PI / 2),
+      piPart = (Math.PI * 2) / settings.scheme.count;
+    return {
+      width,
+      widthHalf: width / 2,
+      x,
+      y,
+      piStart,
+      piPart,
+    };
+  }
+  drawTooltip() {}
+  draw() {
+    const { canvas, settings } = this;
+    const { scheme } = settings;
+    const { context } = canvas;
+    const coords = this.getCoords();
+
+    context.strokeStyle = scheme.styles.color;
+    context.lineWidth = scheme.styles.width;
+    context.beginPath();
+
+    for (let i = 0; i <= scheme.count - 1; i++) {
+      let point = getPointOnArc(
+        coords.x,
+        coords.y,
+        coords.widthHalf * Math.random(),
+        coords.piStart + coords.piPart * i
+      );
+
+      if (!i) {
+        context.moveTo(point.x, point.y);
+      } else {
+        context.lineTo(point.x, point.y);
+      }
+    }
+
+    context.closePath();
+    context.stroke();
+  }
+  render(info = {}) {
+    let time = 300;
+    if (this.renderTimeout) clearTimeout(this.renderTimeout);
+    this.renderTimeout = setTimeout(() => {
+      super.baseRender();
+      this.draw();
+      this.drawTooltip();
+    }, time / 60);
+  }
+}

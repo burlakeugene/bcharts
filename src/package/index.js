@@ -1,10 +1,11 @@
-import { Plot, Donut, Pie, Radar, Funnel } from '../Chart';
-export { Plot, Donut, Pie, Radar, Funnel };
-export default { Plot, Donut, Pie, Radar, Funnel };
+import { Plot, Donut, Pie, Radar, Funnel, Spectr } from '../Chart';
+export { Plot, Donut, Pie, Radar, Funnel, Spectr };
+export default { Plot, Donut, Pie, Radar, Funnel, Spectr };
 window.bChart = {
   Plot,
   Donut,
   Pie,
   Radar,
   Funnel,
+  Spectr,
 };

@@ -162,4 +162,14 @@ window.addEventListener('load', () => {
         data,
       });
   });
+
+  let spectrCharts = document.querySelectorAll('.chart-spectr');
+  spectrCharts.forEach((item, index) => {
+    let canvas = item.querySelector('canvas'),
+      data = {},
+      chart = new Chart.Spectr({
+        canvas,
+        data,
+      });
+  });
 });
