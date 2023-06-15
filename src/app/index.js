@@ -170,6 +170,11 @@ window.addEventListener('load', () => {
       chart = new Chart.Spectr({
         canvas,
         data,
+        settings: {
+          styles: {
+            color: 'white'
+          }
+        }
       });
   });
 });

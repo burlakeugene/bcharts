@@ -25,7 +25,7 @@ export default class Example extends Chart {
       y =
         element.clientHeight / 2 + settings.offset.top - settings.offset.bottom,
       piStart = -(Math.PI / 2),
-      piPart = (Math.PI * 2) / settings.scheme.count;
+      piPart = (Math.PI * 2) / settings.top.count;
     return {
       width,
       widthHalf: width / 2,
@@ -38,31 +38,36 @@ export default class Example extends Chart {
   drawTooltip() {}
   draw() {
     const { canvas, settings } = this;
-    const { scheme } = settings;
+    const { styles, count, top} = settings;
     const { context } = canvas;
     const coords = this.getCoords();
 
-    context.strokeStyle = scheme.styles.color;
-    context.lineWidth = scheme.styles.width;
-    context.beginPath();
+    console.log
 
-    for (let i = 0; i <= scheme.count - 1; i++) {
-      let point = getPointOnArc(
-        coords.x,
-        coords.y,
-        coords.widthHalf * Math.random(),
-        coords.piStart + coords.piPart * i
-      );
+    for (let i = 0; i <= count - 1; i++) {
+      context.strokeStyle = styles.color;
+      context.lineWidth = styles.width;
+      context.beginPath();
 
-      if (!i) {
-        context.moveTo(point.x, point.y);
-      } else {
-        context.lineTo(point.x, point.y);
+      for (let i = 0; i <= top.count - 1; i++) {
+        console.log(Math.random() + 1);
+        let point = getPointOnArc(
+          coords.x,
+          coords.y,
+          coords.widthHalf * Math.min(1, Math.random() + 0.3),
+          coords.piStart + coords.piPart * i
+        );
+
+        if (!i) {
+          context.moveTo(point.x, point.y);
+        } else {
+          context.lineTo(point.x, point.y);
+        }
       }
-    }
 
-    context.closePath();
-    context.stroke();
+      context.closePath();
+      context.stroke();
+    }
   }
   render(info = {}) {
     let time = 300;

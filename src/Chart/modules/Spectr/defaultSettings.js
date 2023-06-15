@@ -1,10 +1,11 @@
 export default {
-  scheme: {
+  count: 2,
+  top: {
     count: 6,
-    styles: {
-      width: 2,
-      color: '#2b2a49',
-    },
+  },
+  styles: {
+    width: 2,
+    color: '#2b2a49',
   },
   offset: {
     top: 30,
