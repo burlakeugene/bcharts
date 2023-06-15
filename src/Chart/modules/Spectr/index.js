@@ -38,11 +38,9 @@ export default class Example extends Chart {
   drawTooltip() {}
   draw() {
     const { canvas, settings } = this;
-    const { styles, count, top} = settings;
+    const { styles, count, top } = settings;
     const { context } = canvas;
     const coords = this.getCoords();
-
-    console.log
 
     for (let i = 0; i <= count - 1; i++) {
       context.strokeStyle = styles.color;
@@ -50,7 +48,6 @@ export default class Example extends Chart {
       context.beginPath();
 
       for (let i = 0; i <= top.count - 1; i++) {
-        console.log(Math.random() + 1);
         let point = getPointOnArc(
           coords.x,
           coords.y,
