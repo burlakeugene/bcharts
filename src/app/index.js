@@ -1,5 +1,6 @@
 import Chart from '../package';
-import './styles.scss';
+import './index.scss';
+
 window.addEventListener('load', () => {
   let lineCharts = document.querySelectorAll('.chart-line');
   lineCharts.forEach((item, index) => {
