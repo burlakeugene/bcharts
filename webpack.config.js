@@ -29,7 +29,7 @@ module.exports = {
     ),
     filename: 'bundle.js',
     libraryTarget: buildType,
-    publicPath: '/',
+    publicPath: './',
   },
   devtool: 'source-map',
   module: {
