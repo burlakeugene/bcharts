@@ -1,3 +1,5 @@
+import { deepClone } from './common';
+
 Date.prototype.formatting = function (format) {
   var yyyy = this.getFullYear().toString();
   format = format.replace(/yyyy/g, yyyy);
@@ -27,67 +29,86 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
   return this;
 };
 
-CanvasRenderingContext2D.prototype.bezierCurveMulti = function (
-  points,
-  tension
-) {
-  tension = tension || 0.25;
-  var l = points.length;
-  if (l < 2) return;
-  if (l == 2) {
-    this.moveTo(points[0][0], points[0][1]);
-    this.lineTo(points[1][0], points[1][1]);
-    return this;
-  }
-  function h(x, y) {
-    return Math.sqrt(x * x + y * y);
-  }
-  var cpoints = [];
-  points.forEach(function () {
-    cpoints.push({});
-  });
+CanvasRenderingContext2D.prototype.drawCurve = function (points, config = {}) {
+  points = deepClone(points);
+  const { closePath } = config;
 
-  for (var i = 1; i < l - 1; i++) {
-    var pi = points[i],
-      pp = points[i - 1],
-      pn = points[i + 1],
-      rdx = pn[0] - pp[0],
-      rdy = pn[1] - pp[1],
-      rd = h(rdx, rdy),
-      dx = rdx / rd,
-      dy = rdy / rd,
-      dp = h(pi[0] - pp[0], pi[1] - pp[1]),
-      dn = h(pi[0] - pn[0], pi[1] - pn[1]),
-      cpx = pi[0] - dx * dp * tension,
-      cpy = pi[1] - dy * dp * tension,
-      cnx = pi[0] + dx * dn * tension,
-      cny = pi[1] + dy * dn * tension;
+  if (!points.length) {
+    return;
+  }
 
-    cpoints[i] = {
-      cp: [cpx, cpy],
-      cn: [cnx, cny],
+  if (closePath) {
+    points[0] = {
+      x: (points[points.length - 1].x + points[1].x) / 2,
+      y: (points[points.length - 1].y + points[1].y) / 2,
     };
+    points.push(points[0]);
   }
-  cpoints[0] = {
-    cn: [
-      (points[0][0] + cpoints[1].cp[0]) / 2,
-      (points[0][1] + cpoints[1].cp[1]) / 2,
-    ],
-  };
-  cpoints[l - 1] = {
-    cp: [
-      (points[l - 1][0] + cpoints[l - 2].cn[0]) / 2,
-      (points[l - 1][1] + cpoints[l - 2].cn[1]) / 2,
-    ],
-  };
 
-  this.moveTo(points[0][0], points[0][1]);
+  this.beginPath();
 
-  for (i = 1; i < l; i++) {
-    var p = points[i],
-      cp = cpoints[i],
-      cpp = cpoints[i - 1];
-    this.bezierCurveTo(cpp.cn[0], cpp.cn[1], cp.cp[0], cp.cp[1], p[0], p[1]);
+  this.moveTo(points[0].x, points[0].y);
+
+  let x, y;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    x = (points[i].x + points[i + 1].x) / 2;
+    y = (points[i].y + points[i + 1].y) / 2;
+    this.quadraticCurveTo(points[i].x, points[i].y, x, y);
   }
+
+  const lastPoint = points[points.length - 1];
+
+  this.quadraticCurveTo(lastPoint.x, lastPoint.y, lastPoint.x, lastPoint.y);
+  this.stroke();
+
+  return this;
+};
+
+CanvasRenderingContext2D.prototype.drawLineCurve = function (points) {
+  function gradient(a, b) {
+    return (b.y - a.y) / (b.x - a.x);
+  }
+
+  points = deepClone(points);
+  let f, t, nexP, dx2, dy2;
+  //f = 0, will be straight line
+  //t suppose to be 1, but changing the value can control the smoothness too
+  if (typeof f == 'undefined') f = 0.3;
+  if (typeof t == 'undefined') t = 0.6;
+
+  this.beginPath();
+  this.moveTo(points[0].x, points[0].y);
+
+  var m = 0;
+  var dx1 = 0;
+  var dy1 = 0;
+
+  var preP = points[0];
+  for (var i = 1; i < points.length; i++) {
+    var curP = points[i];
+    nexP = points[i + 1];
+    if (nexP) {
+      m = gradient(preP, nexP);
+      dx2 = (nexP.x - curP.x) * -f;
+      dy2 = dx2 * m * t;
+    } else {
+      dx2 = 0;
+      dy2 = 0;
+    }
+    this.bezierCurveTo(
+      preP.x - dx1,
+      preP.y - dy1,
+      curP.x + dx2,
+      curP.y + dy2,
+      curP.x,
+      curP.y
+    );
+    dx1 = dx2;
+    dy1 = dy2;
+    preP = curP;
+  }
+  this.stroke();
+
   return this;
 };

@@ -356,16 +356,20 @@ export default class Plot extends Chart {
       context.strokeStyle = dataset.color;
       context.lineWidth = lineWidth;
       context.lineJoin = 'round';
-      context.beginPath();
-      values.forEach((value, index) => {
-        this.checkIsHovered(value);
-        if (!index) {
-          context.moveTo(value.x, value.y);
-        } else {
-          context.lineTo(value.x, value.y);
-        }
-      });
-      context.stroke();
+      if (dataset.smooth) {
+        context.drawLineCurve(values);
+      } else {
+        context.beginPath();
+        values.forEach((value, index) => {
+          this.checkIsHovered(value);
+          if (!index) {
+            context.moveTo(value.x, value.y);
+          } else {
+            context.lineTo(value.x, value.y);
+          }
+        });
+        context.stroke();
+      }
     }
     if (dataset.type === 'dot' || line?.dots?.enable) {
       context.fillStyle = dataset.color;

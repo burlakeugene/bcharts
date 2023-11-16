@@ -1,7 +1,7 @@
 export default {
-  count: 2,
+  count:10,
   top: {
-    count: 6,
+    count: 10,
   },
   styles: {
     width: 2,

@@ -181,15 +181,6 @@ export default class Example extends Chart {
       context.restore();
     }
     bezierRight.reverse();
-    // context.fillStyle = context.strokeStyle = 'red';
-    // context.beginPath();
-    // context.moveTo(bezierLeft[0][0], bezierLeft[0][1]);
-    // context.bezierCurveMulti(bezierLeft);
-    // context.moveTo(bezierRight[0][0], bezierRight[0][1]);
-    // context.bezierCurveMulti(bezierRight);
-    // context.stroke();
-    // context.fill();
-    // console.log(bezierLeft, bezierRight);
   }
   render(info = {}) {
     let time = 300;

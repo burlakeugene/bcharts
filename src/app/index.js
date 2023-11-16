@@ -41,6 +41,18 @@ window.addEventListener('load', () => {
             {
               name: 'Some line data line',
               type: 'line',
+              smooth: true,
+              values: (() => {
+                let array = [];
+                for (let i = 0; i <= dataLength; i++) {
+                  array.push(Math.random() * (Math.random() > 0.5 ? 1 : -1));
+                }
+                return array;
+              })(),
+            },
+            {
+              name: 'Some line data line',
+              type: 'line',
               values: (() => {
                 let array = [];
                 for (let i = 0; i <= dataLength; i++) {
@@ -173,9 +185,9 @@ window.addEventListener('load', () => {
         data,
         settings: {
           styles: {
-            color: 'white'
-          }
-        }
+            color: 'white',
+          },
+        },
       });
   });
 });

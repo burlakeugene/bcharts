@@ -21,7 +21,6 @@
   "license": "MIT",
   "scripts": {
     "dev": "webpack serve --mode=development",
-    "dev-ip": "webpack --watch --mode=development --open --hot --host 0.0.0.0 --hot",
     "build_app": "BUILD_TARGET='app' BUILD_TYPE='umd' webpack --mode=production",
     "build_package_commonjs2": "BUILD_TARGET='package' BUILD_TYPE='commonjs2' webpack --mode=production",
     "build_package_dist": "BUILD_TARGET='package' BUILD_TYPE='umd' webpack --mode=production",
