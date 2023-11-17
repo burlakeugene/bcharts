@@ -3,10 +3,8 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-let mode = 'development';
-if (process.env.NODE_ENV === 'production') {
-  mode = 'production';
-}
+
+const isProduction = process.argv.some((arg) => arg.includes('production'));
 
 const ROOT_DIR = __dirname;
 const buildType = process.env.BUILD_TYPE || 'umd';
@@ -29,7 +27,7 @@ module.exports = {
     ),
     filename: 'bundle.js',
     libraryTarget: buildType,
-    publicPath: mode === 'development' ? '/' : './',
+    publicPath: isProduction ? './' : '/',
   },
   devtool: 'source-map',
   module: {
