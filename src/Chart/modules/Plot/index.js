@@ -42,7 +42,7 @@ export default class Plot extends Chart {
         };
       });
     });
-    data.labels.forEach((label, index) => {
+    data.labels?.forEach((label, index) => {
       data.labels[index] = {
         text: label,
       };
@@ -197,13 +197,18 @@ export default class Plot extends Chart {
       { labels, offset, grid } = settings,
       { element, context } = canvas,
       { enable, styles } = labels;
-    if (!enable) return;
-    let drawRect = this.getDrawRect('line'),
+
+    if (!enable || !data.labels?.length) {
+      return;
+    }
+
+    let drawRect = this.getDrawRect('view'),
       start = drawRect.left,
-      width = drawRect.width / (data.labels.length - 1),
+      width = drawRect.width / data.labels.length,
       y = element.clientHeight - offset.bottom / 2;
+
     data.labels.forEach((label, index) => {
-      let x = start + (width ? width * index : 0);
+      let x = start + width / 2 + width * index;
       context.font = '100 ' + styles.fontSize + 'px arial';
       context.fillStyle = styles.color;
       context.textAlign = 'center';

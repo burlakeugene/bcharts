@@ -10,7 +10,7 @@ window.addEventListener('load', () => {
         data: {
           labels: (() => {
             let array = [];
-            for (let i = 0; i <= 3; i++) {
+            for (let i = 0; i <= dataLength; i++) {
               array.push('Label ' + parseInt(i + 1));
             }
             return array;
