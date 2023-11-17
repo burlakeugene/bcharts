@@ -361,7 +361,6 @@ export default class Plot extends Chart {
       } else {
         context.beginPath();
         values.forEach((value, index) => {
-          this.checkIsHovered(value);
           if (!index) {
             context.moveTo(value.x, value.y);
           } else {
