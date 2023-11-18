@@ -9,9 +9,9 @@ export default {
     enable: true,
     offset: {
       top: 20,
-      right: 0,
+      right: 20,
       bottom: 20,
-      left: 0,
+      left: 20,
     },
     styles: {
       background: '',

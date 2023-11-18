@@ -66,48 +66,46 @@ CanvasRenderingContext2D.prototype.drawCurve = function (points, config = {}) {
 };
 
 CanvasRenderingContext2D.prototype.drawLineCurve = function (points) {
-  function gradient(a, b) {
+  function diff(a, b) {
     return (b.y - a.y) / (b.x - a.x);
   }
 
+  const f = 0.3;
+  const t = 0.9;
+
   points = deepClone(points);
-  let f, t, nexP, dx2, dy2;
-  //f = 0, will be straight line
-  //t suppose to be 1, but changing the value can control the smoothness too
-  if (typeof f == 'undefined') f = 0.3;
-  if (typeof t == 'undefined') t = 0.6;
 
   this.beginPath();
+
   this.moveTo(points[0].x, points[0].y);
 
-  var m = 0;
-  var dx1 = 0;
-  var dy1 = 0;
+  let dx1 = 0;
+  let dy1 = 0;
+  let dx2 = 0;
+  let dy2 = 0;
 
-  var preP = points[0];
-  for (var i = 1; i < points.length; i++) {
-    var curP = points[i];
-    nexP = points[i + 1];
-    if (nexP) {
-      m = gradient(preP, nexP);
-      dx2 = (nexP.x - curP.x) * -f;
-      dy2 = dx2 * m * t;
-    } else {
-      dx2 = 0;
-      dy2 = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prevPoint = points[i - 1];
+    const currentPoint = points[i];
+    const nextPoint = points[i + 1];
+
+    if (nextPoint) {
+      dx2 = (nextPoint.x - currentPoint.x) * -f;
+      dy2 = dx2 * diff(prevPoint, nextPoint) * t;
     }
+
     this.bezierCurveTo(
-      preP.x - dx1,
-      preP.y - dy1,
-      curP.x + dx2,
-      curP.y + dy2,
-      curP.x,
-      curP.y
+      prevPoint.x - dx1,
+      prevPoint.y - dy1,
+      currentPoint.x + dx2,
+      currentPoint.y + dy2,
+      currentPoint.x,
+      currentPoint.y
     );
     dx1 = dx2;
     dy1 = dy2;
-    preP = curP;
   }
+
   this.stroke();
 
   return this;

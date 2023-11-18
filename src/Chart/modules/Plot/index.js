@@ -202,19 +202,33 @@ export default class Plot extends Chart {
       return;
     }
 
-    let drawRect = this.getDrawRect('view'),
+    const count = data.labels.length;
+
+    let drawRect = this.getDrawRect('line'),
+      viewRect = this.getDrawRect('view'),
+      width = drawRect.width / (count - 1),
       start = drawRect.left,
-      width = drawRect.width / data.labels.length,
       y = element.clientHeight - offset.bottom / 2;
 
+    width = isFinite(width) ? width : drawRect.width;
+
     data.labels.forEach((label, index) => {
-      let x = start + width / 2 + width * index;
+      let x = start + width * index;
       context.font = '100 ' + styles.fontSize + 'px arial';
       context.fillStyle = styles.color;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      label.xStart = x - width / 2;
-      label.xEnd = x + width / 2;
+
+      if (!index) {
+        label.xStart = viewRect.left;
+        label.xEnd = x + width / 2;
+      } else if (index === count - 1) {
+        label.xStart = x - width / 2;
+        label.xEnd = viewRect.width + viewRect.left;
+      } else {
+        label.xStart = x - width / 2;
+        label.xEnd = x + width / 2;
+      }
       context.fillText(label.text, x, y);
     });
   }
@@ -282,7 +296,7 @@ export default class Plot extends Chart {
     lines.forEach((dataset) => {
       let { type } = dataset;
       type = type.toUpperCase();
-      this['drawLINE'] && this['drawLINE'](dataset);
+      this.drawLINE(dataset);
     });
   }
   getDrawRect(type) {
@@ -328,13 +342,13 @@ export default class Plot extends Chart {
       };
     return type && obj[type] ? obj[type] : obj;
   }
-  drawLINE(dataset, allValues) {
+  drawLINE(dataset) {
     let { canvas, settings } = this,
       { data, offset, grid } = settings,
       { element, context } = canvas,
       { line } = data,
       { lineWidth } = line.styles,
-      { values, color } = dataset,
+      { values, color, smooth } = dataset,
       drawRect = this.getDrawRect('line'),
       viewRect = this.getDrawRect('view'),
       drawStart = drawRect.left,
@@ -361,7 +375,7 @@ export default class Plot extends Chart {
       context.strokeStyle = dataset.color;
       context.lineWidth = lineWidth;
       context.lineJoin = 'round';
-      if (dataset.smooth) {
+      if (smooth) {
         context.drawLineCurve(values);
       } else {
         context.beginPath();
@@ -394,7 +408,7 @@ export default class Plot extends Chart {
       });
     }
   }
-  drawBAR(dataset, allValues) {
+  drawBAR(dataset) {
     let { canvas, settings, cursor } = this,
       { data } = settings,
       { element, context } = canvas,

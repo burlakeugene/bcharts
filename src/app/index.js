@@ -7,6 +7,15 @@ window.addEventListener('load', () => {
     let canvas = item.querySelector('canvas'),
       dataLength = 9,
       chart = new Chart.Plot({
+        settings: {
+          data: {
+            line: {
+              dots: {
+                enable: true
+              },
+            },
+          },
+        },
         data: {
           labels: (() => {
             let array = [];
@@ -155,7 +164,7 @@ window.addEventListener('load', () => {
       data = [
         {
           label: 'Deposit',
-          value: 3,
+          value: 44,
         },
         {
           label: 'Registrations',
